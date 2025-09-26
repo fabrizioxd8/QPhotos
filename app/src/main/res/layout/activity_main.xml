@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true" tools:context=".MainActivity">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/controls_card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        app:cardBackgroundColor="#BFFFFFFF" app:cardCornerRadius="8dp"
+        app:cardElevation="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/etNombreProyecto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints=""
+                android:hint="Escribe el nombre del proyecto"
+                android:inputType="text" />
+
+            <TextView
+                android:id="@+id/tvLastProject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:padding="8dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:text="C.C. 0 PROYECTO"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:id="@+id/tvQueueCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:padding="8dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:drawablePadding="4dp"
+                android:gravity="center"
+                android:textColor="@android:color/holo_red_dark"
+                android:textStyle="italic"
+                android:visibility="gone"
+                tools:text="3 foto(s) en cola"
+                app:drawableStartCompat="@android:drawable/ic_popup_sync" />
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:elevation="12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_settings"
+        android:contentDescription="Ajustes"
+        app:layout_constraintBottom_toBottomOf="@id/controls_card"
+        app:layout_constraintEnd_toEndOf="@id/controls_card" />
+
+    <ImageButton
+        android:id="@+id/view_projects_button"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="32dp"
+        android:background="@drawable/ic_folder"
+        android:contentDescription="Ver Proyectos Subidos"
+        android:elevation="2dp"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toBottomOf="@id/camera_capture_button"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/camera_capture_button" />
+
+    <ImageButton
+        android:id="@+id/camera_capture_button"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="50dp"
+        android:background="@drawable/ic_shutter"
+        android:contentDescription="Tomar Foto"
+        android:elevation="2dp"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageButton
+        android:id="@+id/gallery_button"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginEnd="32dp"
+        android:background="@drawable/ic_gallery"
+        android:contentDescription="Subir desde Galería"
+        android:elevation="2dp"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toBottomOf="@id/camera_capture_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/camera_capture_button" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
