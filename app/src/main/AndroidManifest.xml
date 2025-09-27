@@ -10,8 +10,10 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
 
@@ -38,9 +40,12 @@
             </intent-filter>
         </activity>
         <activity android:name=".SettingsActivity" />
-        <activity android:name=".ProjectsActivity" />
+        <activity
+            android:name=".ProjectsActivity"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
         <activity android:name=".GalleryActivity" />
-        <activity android:name=".QueueActivity" />
+        <activity android:name=".PhotoViewerActivity" android:theme="@style/Theme.MaterialComponents.NoActionBar" />
+        <activity android:name="com.example.qphotos.QueueActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
