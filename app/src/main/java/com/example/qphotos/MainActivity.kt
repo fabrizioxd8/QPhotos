@@ -1,5 +1,6 @@
 package com.example.qphotos
 
+import android.os.Build
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -54,6 +55,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewFinder: PreviewView
     private lateinit var etNombreProyecto: EditText
     private lateinit var tvLastProject: TextView
+    private lateinit var btnFlash: ImageButton
+    private var currentFlashMode: Int = ImageCapture.FLASH_MODE_OFF
     private lateinit var tvQueueCount: TextView
     private val client = OkHttpClient()
 
@@ -68,13 +71,14 @@ class MainActivity : AppCompatActivity() {
             if (!projectName.lowercase().startsWith("c.c. ")) {
                 projectName = "C.C. " + projectName
             }
-            Toast.makeText(this, "Añadiendo ${uris.size} fotos a la cola...", Toast.LENGTH_SHORT).show()
             for (uri in uris) {
                 val photoFile = copyUriToInternalStorage(uri, "GALLERY_${System.currentTimeMillis()}_${uris.indexOf(uri)}")
                 if (photoFile != null) {
-                    enqueueUploadTask(photoFile.absolutePath, projectName)
+                    enqueueUploadTask(photoFile.absolutePath, projectName, showToast = false)
                 }
             }
+            val message = if (uris.size == 1) "1 foto añadida a la cola." else "${uris.size} fotos añadidas a la cola."
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -91,6 +95,7 @@ class MainActivity : AppCompatActivity() {
         val galleryButton: ImageButton = findViewById(R.id.gallery_button) // Using the correct ID
         val settingsButton: ImageButton = findViewById(R.id.btnSettings)
         val viewProjectsButton: ImageButton = findViewById(R.id.view_projects_button) // Using the correct ID
+        btnFlash = findViewById(R.id.btnFlash)
 
         // --- (Permission logic is the same) ---
         if (allPermissionsGranted()) {
@@ -113,6 +118,16 @@ class MainActivity : AppCompatActivity() {
         viewProjectsButton.setOnClickListener { startActivity(Intent(this, ProjectsActivity::class.java)) }
         tvLastProject.setOnClickListener { etNombreProyecto.setText(tvLastProject.text) }
         tvQueueCount.setOnClickListener { startActivity(Intent(this, QueueActivity::class.java)) }
+
+        btnFlash.setOnClickListener {
+            currentFlashMode = when (currentFlashMode) {
+                ImageCapture.FLASH_MODE_OFF -> ImageCapture.FLASH_MODE_ON
+                ImageCapture.FLASH_MODE_ON -> ImageCapture.FLASH_MODE_AUTO
+                else -> ImageCapture.FLASH_MODE_OFF
+            }
+            updateFlashButtonIcon()
+            imageCapture?.flashMode = currentFlashMode
+        }
 
         // --- (The rest of onCreate is the same) ---
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -159,7 +174,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // --- CAMBIO: This function now just adds to the DB and schedules the work ---
-    private fun enqueueUploadTask(photoPath: String, projectName: String) {
+    private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true) {
         val task = UploadTask(
             imagePath = photoPath,
             projectName = projectName,
@@ -168,11 +183,21 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             AppDatabase.getDatabase(applicationContext).uploadTaskDao().insert(task)
-            Toast.makeText(applicationContext, "Foto añadida a la cola.", Toast.LENGTH_SHORT).show()
+            if (showToast) {
+                Toast.makeText(applicationContext, "Foto añadida a la cola.", Toast.LENGTH_SHORT).show()
+            }
             scheduleUploadWorker()
         }
         tvLastProject.text = projectName
         if (!tvLastProject.isVisible) { tvLastProject.isVisible = true }
+    }
+
+    private fun updateFlashButtonIcon() {
+        when (currentFlashMode) {
+            ImageCapture.FLASH_MODE_OFF -> btnFlash.setImageResource(R.drawable.ic_flash_off)
+            ImageCapture.FLASH_MODE_ON -> btnFlash.setImageResource(R.drawable.ic_flash_on)
+            ImageCapture.FLASH_MODE_AUTO -> btnFlash.setImageResource(R.drawable.ic_flash_auto)
+        }
     }
 
     // --- NUEVO: This is the function that schedules the background job ---
@@ -204,7 +229,9 @@ class MainActivity : AppCompatActivity() {
                 it.surfaceProvider = viewFinder.surfaceProvider
             }
 
-            imageCapture = ImageCapture.Builder().build()
+            imageCapture = ImageCapture.Builder()
+                .setFlashMode(currentFlashMode)
+                .build()
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -242,7 +269,19 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "CameraXApp"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        private val REQUIRED_PERMISSIONS =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            } else {
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
+            }
         private const val LAST_PROJECT_PATH = "/last-project"
     }
 
