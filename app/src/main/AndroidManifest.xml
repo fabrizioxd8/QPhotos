@@ -40,7 +40,9 @@
             </intent-filter>
         </activity>
         <activity android:name=".SettingsActivity" />
-        <activity android:name=".ProjectsActivity" />
+        <activity
+            android:name=".ProjectsActivity"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
         <activity android:name=".GalleryActivity" />
         <activity android:name="com.example.qphotos.QueueActivity" />
 

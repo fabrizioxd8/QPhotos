@@ -32,13 +32,34 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <EditText
-                android:id="@+id/etNombreProyecto"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:autofillHints=""
-                android:hint="Escribe el nombre del proyecto"
-                android:inputType="text" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etNombreProyecto"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:autofillHints=""
+                    android:hint="Escribe el nombre del proyecto"
+                    android:inputType="text" />
+
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Ajustes"
+                    android:padding="4dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_settings"
+                    app:tint="?attr/colorOnSurface" />
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvLastProject"
@@ -46,8 +67,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="8dp"
-                android:padding="8dp"
                 android:background="?android:attr/selectableItemBackground"
+                android:padding="8dp"
                 android:text="C.C. 0 PROYECTO"
                 android:textColor="?attr/colorPrimary" />
 
@@ -57,15 +78,15 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="12dp"
-                android:padding="8dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:drawablePadding="4dp"
                 android:gravity="center"
+                android:padding="8dp"
                 android:textColor="@android:color/holo_red_dark"
                 android:textStyle="italic"
                 android:visibility="gone"
-                tools:text="3 foto(s) en cola"
-                app:drawableStartCompat="@android:drawable/ic_popup_sync" />
+                app:drawableStartCompat="@android:drawable/ic_popup_sync"
+                tools:text="3 foto(s) en cola" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
@@ -76,6 +97,7 @@
         android:layout_height="48dp"
         android:layout_marginTop="24dp"
         android:layout_marginEnd="24dp"
+        android:background="@drawable/ic_flash_background"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Flash"
         android:elevation="12dp"
