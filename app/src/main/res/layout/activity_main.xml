@@ -34,7 +34,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Flash button removed from here -->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -50,6 +49,31 @@
                     android:autofillHints=""
                     android:hint="Escribe el nombre del proyecto"
                     android:inputType="text" />
+
+                <ImageButton
+                    android:id="@+id/btnFlash"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Flash"
+                    android:padding="4dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_flash_off"
+                    app:tint="?attr/colorOnSurface" />
+
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Ajustes"
+                    android:padding="4dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_settings"
+                    app:tint="?attr/colorOnSurface" />
+
 
             </LinearLayout>
 
@@ -116,6 +140,7 @@
         app:tint="@android:color/white" />
 
     <ImageButton
+
         android:id="@+id/view_projects_button"
         android:layout_width="60dp"
         android:layout_height="60dp"
