@@ -40,6 +40,16 @@ class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
                 }
             )
         }
+
+        holder.itemView.setOnClickListener {
+            val context = holder.itemView.context
+            val intent = android.content.Intent(context, PhotoViewerActivity::class.java).apply {
+                putStringArrayListExtra("PHOTO_URLS", ArrayList(photoUrls))
+                putExtra("CURRENT_POSITION", position)
+                putExtra("BASE_URL", baseUrl)
+            }
+            context.startActivity(intent)
+        }
     }
 
     override fun getItemCount() = photoUrls.size

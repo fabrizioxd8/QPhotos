@@ -10,9 +10,7 @@
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="-47dp"
-        tools:layout_editor_absoluteY="95dp" />
+        android:layout_height="match_parent" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/controls_card"
@@ -33,7 +31,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -60,6 +57,19 @@
                     android:padding="4dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_flash_off"
+                    app:tint="?attr/colorOnSurface" />
+
+
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Ajustes"
+                    android:padding="4dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_settings"
                     app:tint="?attr/colorOnSurface" />
 
 
@@ -96,6 +106,7 @@
     </androidx.cardview.widget.CardView>
 
     <ImageButton
+
         android:id="@+id/btnSettings"
         android:layout_width="17dp"
         android:layout_height="17dp"
