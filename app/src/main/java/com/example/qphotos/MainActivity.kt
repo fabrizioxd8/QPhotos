@@ -247,7 +247,8 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 arrayOf(
                     Manifest.permission.CAMERA,
-                    Manifest.permission.READ_MEDIA_IMAGES
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.POST_NOTIFICATIONS
                 )
             } else {
                 arrayOf(
