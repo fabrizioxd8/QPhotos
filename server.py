@@ -165,28 +165,9 @@ def list_projects():
     try:
         month_folders = [d for d in os.listdir(UPLOAD_FOLDER) if os.path.isdir(os.path.join(UPLOAD_FOLDER, d))]
         for month in month_folders:
-            month_path = os.path.join(UPLOAD_FOLDER, month)
-            project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
+            project_folders = [p for p in os.listdir(os.path.join(UPLOAD_FOLDER, month)) if os.path.isdir(os.path.join(UPLOAD_FOLDER, month, p))]
             for project in project_folders:
-                project_dir = os.path.join(month_path, project)
-
-                latest_photo_path = ""
-                all_photos = []
-                for root, _, files in os.walk(project_dir):
-                    for file in files:
-                        if file.lower().endswith('.jpg'):
-                            all_photos.append(os.path.join(root, file))
-
-                if all_photos:
-                    latest_photo_full_path = max(all_photos, key=os.path.getmtime)
-                    latest_photo_path = os.path.relpath(latest_photo_full_path, UPLOAD_FOLDER)
-                    latest_photo_path = latest_photo_path.replace(os.sep, '/')
-
-                projects_data.append({
-                    "month": month,
-                    "name": project,
-                    "thumbnail": latest_photo_path
-                })
+                projects_data.append({"month": month, "name": project})
         return jsonify(projects_data)
     except Exception as e:
         print(f"Error listing projects: {e}")
