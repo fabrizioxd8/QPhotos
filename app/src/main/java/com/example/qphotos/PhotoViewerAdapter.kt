@@ -21,7 +21,11 @@ class PhotoViewerAdapter(private val photoUrls: List<String>, private val baseUr
     }
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
+
         val fullUrl = "$baseUrl/uploads/${photoUrls[position]}"
+
+        val fullUrl = "$baseUrl/${photoUrls[position]}"
+
         holder.imageView.load(fullUrl) {
             placeholder(R.drawable.ic_gallery) // Optional: show a placeholder while loading
             error(R.drawable.ic_folder) // Optional: show an error image if loading fails
