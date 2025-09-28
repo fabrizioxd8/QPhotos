@@ -3,7 +3,6 @@ package com.example.qphotos
 import android.content.Intent
 import android.os.Bundle
 import android.widget.EditText
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -16,12 +15,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 
-// (La data class 'Project' debe estar en su propio archivo Project.kt)
-
 class ProjectsActivity : AppCompatActivity() {
 
     private val client = OkHttpClient()
-    private var currentProjects = mutableListOf<Project>()
     private lateinit var projectsAdapter: ProjectsAdapter
     private lateinit var recyclerView: RecyclerView
 
@@ -33,14 +29,37 @@ class ProjectsActivity : AppCompatActivity() {
         fetchProjects()
     }
 
-    // CAMBIO: Esta función ya no es necesaria, la lógica está en el adapter
-    // override fun onContextItemSelected(...) { ... }
-
     private fun setupRecyclerView() {
         recyclerView = findViewById(R.id.projectsRecyclerView)
-        recyclerView.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 2) // 2 columns for a grid
-        projectsAdapter = ProjectsAdapter(currentProjects)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        projectsAdapter = ProjectsAdapter(
+            emptyList(),
+            onItemClicked = { project -> onProjectClicked(project) },
+            onItemLongClicked = { project -> showOptionsDialog(project) }
+        )
         recyclerView.adapter = projectsAdapter
+    }
+
+    private fun onProjectClicked(project: Project) {
+        val intent = Intent(this, GalleryActivity::class.java).apply {
+            putExtra("PROJECT_NAME", project.name)
+            putExtra("PROJECT_MONTH", project.month) // Correct key
+        }
+        startActivity(intent)
+    }
+
+    private fun showOptionsDialog(project: Project) {
+        val options = arrayOf("Renombrar", "Borrar")
+        AlertDialog.Builder(this)
+            .setTitle("Opciones para '${project.name}'")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showRenameDialog(project)
+                    1 -> showDeleteConfirmationDialog(project)
+                }
+            }
+            .show()
     }
 
     private fun fetchProjects() {
@@ -51,31 +70,22 @@ class ProjectsActivity : AppCompatActivity() {
             finish()
             return
         }
-        val baseUrl = "http://$ip:5000"
-        val url = "$baseUrl/projects"
+        val url = "http://$ip:5000/projects"
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread { Toast.makeText(applicationContext, "Fallo al obtener proyectos", Toast.LENGTH_SHORT).show() }
             }
-
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    val responseBodyString = response.body?.string()
-                    if (responseBodyString != null) {
+                    response.body?.let {
+                        val responseBodyString = it.string()
                         val projects = mutableListOf<Project>()
                         val jsonArray = JSONArray(responseBodyString)
                         for (i in 0 until jsonArray.length()) {
                             val jsonObject = jsonArray.getJSONObject(i)
-                            val thumbnailUrl = jsonObject.optString("thumbnail", "") // Get the new field
-                            projects.add(
-                                Project(
-                                    month = jsonObject.getString("month"),
-                                    name = jsonObject.getString("name"),
-                                    thumbnailUrl = if (thumbnailUrl.isNotBlank()) "$baseUrl/uploads/$thumbnailUrl" else ""
-                                )
-                            )
+                            projects.add(Project(jsonObject.getString("month"), jsonObject.getString("name")))
                         }
                         runOnUiThread {
                             projectsAdapter.updateProjects(projects)
@@ -85,5 +95,77 @@ class ProjectsActivity : AppCompatActivity() {
             }
         })
     }
-}
 
+    private fun showRenameDialog(project: Project) {
+        val editText = EditText(this).apply { setText(project.name) }
+        AlertDialog.Builder(this)
+            .setTitle("Renombrar Proyecto")
+            .setView(editText)
+            .setPositiveButton("Guardar") { _, _ ->
+                val newName = editText.text.toString().trim()
+                if (newName.isNotEmpty() && newName != project.name) {
+                    renameProject(project, newName)
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun renameProject(project: Project, newName: String) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        val url = "http://$ip:5000/project/${project.month}/${project.name}"
+
+        val json = JSONObject().apply { put("new_name", newName) }
+        val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).put(body).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { Toast.makeText(applicationContext, "Fallo al renombrar", Toast.LENGTH_SHORT).show() }
+            }
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    runOnUiThread {
+                        Toast.makeText(applicationContext, "Proyecto renombrado", Toast.LENGTH_SHORT).show()
+                        fetchProjects()
+                    }
+                } else {
+                    runOnUiThread { Toast.makeText(applicationContext, "Error del servidor al renombrar", Toast.LENGTH_SHORT).show() }
+                }
+            }
+        })
+    }
+
+    private fun showDeleteConfirmationDialog(project: Project) {
+        AlertDialog.Builder(this)
+            .setTitle("Borrar Proyecto")
+            .setMessage("¿Estás seguro de que quieres borrar el proyecto '${project.name}' y todas sus fotos? Esta acción no se puede deshacer.")
+            .setPositiveButton("Borrar") { _, _ -> deleteProject(project) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun deleteProject(project: Project) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        val url = "http://$ip:5000/project/${project.month}/${project.name}"
+        val request = Request.Builder().url(url).delete().build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { Toast.makeText(applicationContext, "Fallo al borrar el proyecto", Toast.LENGTH_SHORT).show() }
+            }
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    runOnUiThread {
+                        Toast.makeText(applicationContext, "Proyecto borrado", Toast.LENGTH_SHORT).show()
+                        fetchProjects()
+                    }
+                } else {
+                    runOnUiThread { Toast.makeText(applicationContext, "Error del servidor al borrar", Toast.LENGTH_SHORT).show() }
+                }
+            }
+        })
+    }
+}
