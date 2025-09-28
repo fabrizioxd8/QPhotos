@@ -5,19 +5,54 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true" tools:context=".MainActivity">
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- This is the settings button you requested, in the top-left corner -->
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Ajustes"
+        android:elevation="12dp"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_settings"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@android:color/white" />
+
+    <!-- This is the flash button, now in the top-right corner -->
+    <ImageButton
+        android:id="@+id/btnFlash"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Flash"
+        android:elevation="12dp"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_flash_off"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@android:color/white" />
+
     <androidx.cardview.widget.CardView
         android:id="@+id/controls_card"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="80dp"
         android:layout_marginEnd="24dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardCornerRadius="8dp"
@@ -32,47 +67,13 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <LinearLayout
+            <EditText
+                android:id="@+id/etNombreProyecto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <EditText
-                    android:id="@+id/etNombreProyecto"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:autofillHints=""
-                    android:hint="Escribe el nombre del proyecto"
-                    android:inputType="text" />
-
-                <ImageButton
-                    android:id="@+id/btnFlash"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Flash"
-                    android:padding="4dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_flash_off"
-                    app:tint="?attr/colorOnSurface" />
-
-                <ImageButton
-                    android:id="@+id/btnSettings"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Ajustes"
-                    android:padding="4dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_settings"
-                    app:tint="?attr/colorOnSurface" />
-
-
-            </LinearLayout>
+                android:autofillHints=""
+                android:hint="Escribe el nombre del proyecto"
+                android:inputType="text" />
 
             <TextView
                 android:id="@+id/tvLastProject"
@@ -105,25 +106,6 @@
     </androidx.cardview.widget.CardView>
 
     <ImageButton
-
-
-        android:id="@+id/btnSettings"
-        android:layout_width="17dp"
-        android:layout_height="17dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Ajustes"
-        android:elevation="12dp"
-        android:padding="8dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_settings"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@android:color/white" />
-
-    <ImageButton
-
         android:id="@+id/view_projects_button"
         android:layout_width="60dp"
         android:layout_height="60dp"
