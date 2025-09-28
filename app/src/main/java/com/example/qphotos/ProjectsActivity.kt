@@ -44,7 +44,7 @@ class ProjectsActivity : AppCompatActivity() {
     private fun onProjectClicked(project: Project) {
         val intent = Intent(this, GalleryActivity::class.java).apply {
             putExtra("PROJECT_NAME", project.name)
-            putExtra("PROJECT_MONTH", project.month) // Correct key
+            putExtra("MONTH_FOLDER", project.month)
         }
         startActivity(intent)
     }
