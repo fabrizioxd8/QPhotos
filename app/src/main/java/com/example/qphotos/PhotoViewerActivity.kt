@@ -12,7 +12,9 @@ class PhotoViewerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_photo_viewer)
 
         val viewPager: ViewPager2 = findViewById(R.id.viewPager)
+
         val btnClose: ImageButton = findViewById(R.id.btnClose)
+
 
         val photoUrls = intent.getStringArrayListExtra("PHOTO_URLS") ?: arrayListOf()
         val currentPosition = intent.getIntExtra("CURRENT_POSITION", 0)
@@ -22,8 +24,10 @@ class PhotoViewerActivity : AppCompatActivity() {
         viewPager.adapter = adapter
         viewPager.setCurrentItem(currentPosition, false) // Go to the tapped photo
 
+
         btnClose.setOnClickListener {
             finish() // Close the activity
         }
+
     }
 }
