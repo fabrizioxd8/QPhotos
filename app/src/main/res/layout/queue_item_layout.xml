@@ -1,37 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="16dp"
-    android:gravity="center_vertical">
+    android:layout_marginStart="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
 
-    <ImageView
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@android:drawable/ic_menu_camera"
-        android:contentDescription="Icono de foto"/>
-
-    <LinearLayout
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="16dp">
+        android:padding="12dp">
+
+        <ImageView
+            android:id="@+id/ivQueueThumbnail"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Thumbnail de la foto en cola"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:src="@drawable/ic_gallery" />
 
         <TextView
-            android:id="@+id/tvItemProjectName"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvQueueProjectName"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Nombre del Proyecto"
+            android:layout_marginStart="16dp"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:textSize="16sp"/>
+            android:textColor="?android:attr/textColorPrimary"
+            app:layout_constraintStart_toEndOf="@id/ivQueueThumbnail"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="C.C. Nombre del Proyecto" />
 
         <TextView
-            android:id="@+id/tvItemImagePath"
+            android:id="@+id/tvQueueStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="/path/to/image.jpg"
-            android:textSize="12sp"/>
-    </LinearLayout>
-</LinearLayout>
+            android:layout_marginTop="4dp"
+            android:text="Pendiente"
+            android:textSize="14sp"
+            android:textStyle="italic"
+            android:textColor="?android:attr/textColorSecondary"
+            app:layout_constraintStart_toStartOf="@id/tvQueueProjectName"
+            app:layout_constraintTop_toBottomOf="@id/tvQueueProjectName" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>
