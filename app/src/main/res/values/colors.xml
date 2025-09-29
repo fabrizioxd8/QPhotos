@@ -2,5 +2,5 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="purple_700">#FF3700B3</color>
+    <color name="brand_teal">#03CFB5</color>
 </resources>

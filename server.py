@@ -21,7 +21,6 @@ file_processing_lock = threading.Lock()
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# CAMBIO: The add_watermark function now accepts image data (bytes) and returns an Image object
 def add_watermark(image_data, text):
     try:
         img = Image.open(io.BytesIO(image_data)).convert("RGBA")
@@ -31,7 +30,7 @@ def add_watermark(image_data, text):
         try:
             font = ImageFont.truetype("arial.ttf", size=40)
         except IOError:
-            print(f"ADVERTENCIA: No se pudo cargar la fuente '{FONT_FILE}'. Usando fuente por defecto.")
+            print("ADVERTENCIA: No se pudo cargar la fuente 'arial.ttf'. Usando fuente por defecto.")
             font = ImageFont.load_default()
 
         bbox = draw.textbbox((0, 0), text, font=font)
@@ -107,10 +106,8 @@ def upload_file():
 
 @app.route('/project/<month>/<name>', methods=['PUT', 'DELETE'])
 def manage_project(month, name):
-    # --- Lógica para Renombrar (PUT) ---
     if request.method == 'PUT':
         try:
-            # Obtenemos el nuevo nombre del cuerpo de la petición
             new_name = request.json.get('new_name', '').strip()
             if not new_name:
                 return jsonify({"error": "New name not provided"}), 400
@@ -121,7 +118,6 @@ def manage_project(month, name):
             if not os.path.isdir(old_path):
                 return jsonify({"error": "Project not found"}), 404
 
-            # Renombramos la carpeta
             os.rename(old_path, new_path)
             print(f"Renamed project '{name}' to '{new_name}'")
             return jsonify({"success": "Project renamed"}), 200
@@ -130,7 +126,6 @@ def manage_project(month, name):
             print(f"Error renaming project {name}: {e}")
             return jsonify({"error": "Could not rename project"}), 500
 
-    # --- Lógica para Borrar (DELETE) ---
     if request.method == 'DELETE':
         try:
             project_path = os.path.join(UPLOAD_FOLDER, month, name)
@@ -173,7 +168,6 @@ def list_projects():
         print(f"Error listing projects: {e}")
         return jsonify({"error": "Could not list projects"}), 500
 
-# --- NUEVO: Endpoint para listar todas las fotos de un proyecto específico ---
 @app.route('/photos/<month>/<project>', methods=['GET'])
 def list_photos(month, project):
     photo_urls = []
@@ -190,8 +184,6 @@ def list_photos(month, project):
         print(f"Error listing photos for project {project}: {e}")
         return jsonify({"error": "Could not list photos"}), 500
 
-# --- NUEVO: Endpoint para servir los archivos de imagen estáticos ---
-# This allows the app to request an image like: http://.../uploads/09 SETIEMBRE/Project A/2025-09-10/14-30-05.jpg
 @app.route('/uploads/<path:filepath>')
 def serve_photo(filepath):
     return send_from_directory(UPLOAD_FOLDER, filepath)
@@ -199,7 +191,6 @@ def serve_photo(filepath):
 @app.route('/thumbnail/<path:filepath>')
 def serve_thumbnail(filepath):
     try:
-        # THE FIX IS HERE: The path now starts from the correct UPLOAD_FOLDER
         image_path = os.path.join(UPLOAD_FOLDER, filepath)
 
         if not os.path.exists(image_path):
@@ -218,10 +209,7 @@ def serve_thumbnail(filepath):
         print(f"Error creating thumbnail for {filepath}: {e}")
         return "Error", 500
 
-
 if __name__ == '__main__':
     from waitress import serve
-    # We need to import send_file for the new thumbnail endpoint
-    from flask import send_file
     print("Servidor de producción iniciado en http://0.0.0.0:5000")
     serve(app, host='0.0.0.0', port=5000, threads=8)
