@@ -1,9 +1,11 @@
 package com.example.qphotos
 
 import android.content.Context
+import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.util.AttributeSet
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import androidx.appcompat.widget.AppCompatImageView
@@ -31,14 +33,37 @@ class ZoomableImageView @JvmOverloads constructor(
     private var oldMeasuredHeight = 0
 
     private var mScaleDetector: ScaleGestureDetector
+    private lateinit var gestureDetector: GestureDetector
+    private var initialMatrix = Matrix()
+
+    val isZoomed: Boolean
+        get() = saveScale > minScale
 
     init {
         super.setClickable(true)
         mScaleDetector = ScaleGestureDetector(context, ScaleListener())
+        gestureDetector = GestureDetector(context, GestureListener())
         matrix_.setTranslate(1f, 1f)
         m = FloatArray(9)
         imageMatrix = matrix_
         scaleType = ScaleType.MATRIX
+    }
+
+    fun resetZoom() {
+        matrix_.set(initialMatrix)
+        saveScale = minScale
+        imageMatrix = matrix_
+        fixTrans()
+        invalidate()
+    }
+
+    private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            if (isZoomed) {
+                resetZoom()
+            }
+            return true
+        }
     }
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -121,7 +146,8 @@ class ZoomableImageView @JvmOverloads constructor(
             val scaleY = viewHeight.toFloat() / bmHeight.toFloat()
             scale = scaleX.coerceAtMost(scaleY)
             matrix_.setScale(scale, scale)
-            saveScale = 1f
+            minScale = scale
+            saveScale = minScale
 
             // Center the image
             var redundantYSpace = viewHeight.toFloat() - scale * bmHeight.toFloat()
@@ -132,35 +158,41 @@ class ZoomableImageView @JvmOverloads constructor(
             origWidth = viewWidth - 2 * redundantXSpace
             origHeight = viewHeight - 2 * redundantYSpace
             imageMatrix = matrix_
+            initialMatrix.set(matrix_)
         }
         fixTrans()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         mScaleDetector.onTouchEvent(event)
+        gestureDetector.onTouchEvent(event)
         val curr = PointF(event.x, event.y)
+
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 last.set(curr)
                 start.set(last)
                 mode = DRAG
             }
-            MotionEvent.ACTION_MOVE -> if (mode == DRAG) {
-                val deltaX = curr.x - last.x
-                val deltaY = curr.y - last.y
-                val fixTransX = getFixDragTrans(deltaX, viewWidth.toFloat(), origWidth * saveScale)
-                val fixTransY = getFixDragTrans(deltaY, viewHeight.toFloat(), origHeight * saveScale)
-                matrix_.postTranslate(fixTransX, fixTransY)
-                fixTrans()
-                last.set(curr.x, curr.y)
+            MotionEvent.ACTION_MOVE -> {
+                if (mode == DRAG) {
+                    parent.requestDisallowInterceptTouchEvent(isZoomed)
+                    val deltaX = curr.x - last.x
+                    val deltaY = curr.y - last.y
+                    val fixTransX = getFixDragTrans(deltaX, viewWidth.toFloat(), origWidth * saveScale)
+                    val fixTransY = getFixDragTrans(deltaY, viewHeight.toFloat(), origHeight * saveScale)
+                    matrix_.postTranslate(fixTransX, fixTransY)
+                    fixTrans()
+                    last.set(curr.x, curr.y)
+                }
             }
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                parent.requestDisallowInterceptTouchEvent(false)
                 mode = NONE
                 val xDiff = Math.abs(curr.x - start.x).toInt()
                 val yDiff = Math.abs(curr.y - start.y).toInt()
                 if (xDiff < CLICK && yDiff < CLICK) performClick()
             }
-            MotionEvent.ACTION_POINTER_UP -> mode = NONE
         }
         imageMatrix = matrix_
         invalidate()

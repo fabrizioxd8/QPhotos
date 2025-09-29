@@ -4,6 +4,7 @@
         <!-- Customize your light theme here. -->
         <item name="android:statusBarColor">@color/brand_teal</item>
         <item name="android:navigationBarColor">@color/brand_teal</item>
+        <item name="android:colorEdgeEffect">@color/brand_teal_highlight</item>
     </style>
 
     <style name="Theme.QPhotos" parent="Base.Theme.QPhotos" />
