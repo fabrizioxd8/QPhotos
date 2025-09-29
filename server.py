@@ -186,6 +186,24 @@ def list_photos(month, project):
 
 @app.route('/uploads/<path:filepath>')
 def serve_photo(filepath):
+    full_path = os.path.abspath(UPLOAD_FOLDER)
+    requested_path = os.path.abspath(os.path.join(UPLOAD_FOLDER, filepath))
+
+    print(f"--- DEBUG: SERVING PHOTO ---")
+    print(f"Requested filepath: {filepath}")
+    print(f"Base upload folder (absolute): {full_path}")
+    print(f"Attempting to serve file from: {requested_path}")
+
+    # Security check: Ensure the requested path is within the UPLOAD_FOLDER
+    if not requested_path.startswith(full_path):
+        print("!!! SECURITY ALERT: Directory traversal attempt detected.")
+        return "Forbidden", 403
+
+    if not os.path.exists(requested_path):
+        print(f"!!! ERROR: File not found at path: {requested_path}")
+        return "File not found", 404
+
+    print("File found. Sending file...")
     return send_from_directory(UPLOAD_FOLDER, filepath)
 
 @app.route('/thumbnail/<path:filepath>')

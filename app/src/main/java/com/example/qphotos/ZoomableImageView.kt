@@ -49,7 +49,7 @@ class ZoomableImageView @JvmOverloads constructor(
         scaleType = ScaleType.MATRIX
     }
 
-    fun resetZoom() {
+    fun resetToInitialState() {
         matrix_.set(initialMatrix)
         saveScale = minScale
         imageMatrix = matrix_
@@ -57,10 +57,14 @@ class ZoomableImageView @JvmOverloads constructor(
         invalidate()
     }
 
+    fun prepareForNewImage() {
+        saveScale = 1f
+    }
+
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (isZoomed) {
-                resetZoom()
+                resetToInitialState()
             }
             return true
         }
