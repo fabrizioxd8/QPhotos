@@ -5,6 +5,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     private var currentFlashMode: Int = ImageCapture.FLASH_MODE_OFF
     private lateinit var tvQueueCount: TextView
     private val client = OkHttpClient()
+    private lateinit var mediaActionSound: MediaActionSound
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
@@ -126,6 +128,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+        mediaActionSound = MediaActionSound()
+        mediaActionSound.load(MediaActionSound.SHUTTER_CLICK)
         fetchLastProject()
         observeQueue()
         fetchProjectList()
@@ -148,6 +152,9 @@ class MainActivity : AppCompatActivity() {
         )
 
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+        Log.d(TAG, "Playing shutter sound.")
+        mediaActionSound.play(MediaActionSound.SHUTTER_CLICK)
 
         imageCapture.takePicture(
             outputOptions,
@@ -252,6 +259,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+        mediaActionSound.release()
     }
 
     companion object {

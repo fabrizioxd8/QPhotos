@@ -3,11 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
+    <com.example.qphotos.ZoomableImageView
         android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
-        android:contentDescription="Foto a pantalla completa" />
+        android:contentDescription="Foto a pantalla completa con zoom" />
 
 </FrameLayout>
