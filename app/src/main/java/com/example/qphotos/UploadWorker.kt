@@ -88,10 +88,7 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             val success = uploadTask(task, client, baseUrl)
 
             if (success) {
-                task.status = "Completo"
-                dao.update(task)
                 Log.i(TAG, "Successfully uploaded task ${task.id}. Deleting task and file.")
-                delay(500) // Keep "Complete" status visible for a moment
                 dao.delete(task)
                 File(task.imagePath).delete()
             } else {
