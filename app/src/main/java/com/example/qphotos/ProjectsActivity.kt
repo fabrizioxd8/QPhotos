@@ -99,7 +99,11 @@ class ProjectsActivity : AppCompatActivity() {
 
     private fun showRenameDialog(project: Project) {
         val editText = EditText(this).apply { setText(project.name) }
+
         val dialog = AlertDialog.Builder(this)
+
+        AlertDialog.Builder(this)
+
             .setTitle("Renombrar Proyecto")
             .setView(editText)
             .setPositiveButton("Guardar") { _, _ ->
@@ -109,6 +113,7 @@ class ProjectsActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Cancelar", null)
+
             .create()
 
         dialog.show()
@@ -116,6 +121,11 @@ class ProjectsActivity : AppCompatActivity() {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#03CFB5"))
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#03CFB5"))
     }
+
+
+            .show()
+    }
+
 
     private fun renameProject(project: Project, newName: String) {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
@@ -144,7 +154,11 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmationDialog(project: Project) {
+
         val dialog = AlertDialog.Builder(this)
+
+        AlertDialog.Builder(this)
+
             .setTitle("Borrar Proyecto")
             .setMessage("¿Estás seguro de que quieres borrar el proyecto '${project.name}' y todas sus fotos? Esta acción no se puede deshacer.")
             .setPositiveButton("Borrar") { _, _ -> deleteProject(project) }
@@ -162,6 +176,16 @@ class ProjectsActivity : AppCompatActivity() {
         val ip = prefs.getString("server_ip", null) ?: return
         val url = "http://$ip:5000/project/${project.month}/${project.name}"
         val request = Request.Builder().url(url).delete().build()
+
+            .show()
+    }
+
+    private fun deleteProject(project: Project) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        val url = "http://$ip:5000/project/${project.month}/${project.name}"
+        val request = Request.Builder().url(url).delete().build()
+
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {

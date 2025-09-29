@@ -7,4 +7,10 @@
     <path
         android:fillColor="@android:color/white"
         android:pathData="M21,19V5c0,-1.1 -0.9,-2 -2,-2H5c-1.1,0 -2,0.9 -2,2v14c0,1.1 0.9,2 2,2h14c1.1,0 2,-0.9 2,-2zM8.5,13.5l2.5,3.01L14.5,12l4.5,6H5l3.5,-4.5z"/>
+    android:viewportWidth="960"
+    android:viewportHeight="960"
+    android:tint="?attr/colorControlNormal">
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="m220,732 l0,-524 l520,0 l0,524 l-520,0ZM254,698 l126,-168 84,112 112,-149 170,227 -492,0Z"/>
 </vector>
