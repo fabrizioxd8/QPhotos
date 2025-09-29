@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="ProjectNameDropdown" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxStrokeColor">@color/brand_teal</item>
+        <item name="hintTextColor">@color/brand_teal</item>
+        <item name="android:textColorHint">@color/brand_teal</item>
+        <item name="endIconTint">@color/brand_teal</item>
+    </style>
+</resources>
