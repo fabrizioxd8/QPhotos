@@ -49,7 +49,6 @@ import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
 
-    // --- (Most of your variables are the same) ---
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var viewFinder: PreviewView
@@ -60,7 +59,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvQueueCount: TextView
     private val client = OkHttpClient()
 
-    // The gallery launcher is updated to call the new scheduling function
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
             var projectName = etNombreProyecto.text.toString().trim()
@@ -86,25 +84,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // --- (Connecting UI is the same) ---
         etNombreProyecto = findViewById(R.id.etNombreProyecto)
         tvLastProject = findViewById(R.id.tvLastProject)
         tvQueueCount = findViewById(R.id.tvQueueCount)
         viewFinder = findViewById(R.id.viewFinder)
         val cameraCaptureButton: ImageButton = findViewById(R.id.camera_capture_button)
-        val galleryButton: ImageButton = findViewById(R.id.gallery_button) // Using the correct ID
+        val galleryButton: ImageButton = findViewById(R.id.gallery_button)
         val settingsButton: ImageButton = findViewById(R.id.btnSettings)
-        val viewProjectsButton: ImageButton = findViewById(R.id.view_projects_button) // Using the correct ID
+        val viewProjectsButton: ImageButton = findViewById(R.id.view_projects_button)
         btnFlash = findViewById(R.id.btnFlash)
 
-        // --- (Permission logic is the same) ---
         if (allPermissionsGranted()) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
 
-        // --- (Button listeners are the same, but uploadGalleryButton is fixed) ---
         cameraCaptureButton.setOnClickListener { takePhoto() }
         galleryButton.setOnClickListener {
             val projectName = etNombreProyecto.text.toString().trim()
@@ -129,16 +124,11 @@ class MainActivity : AppCompatActivity() {
             imageCapture?.flashMode = currentFlashMode
         }
 
-        // --- (The rest of onCreate is the same) ---
         cameraExecutor = Executors.newSingleThreadExecutor()
         fetchLastProject()
         observeQueue()
-
-        // CAMBIO: The call to processUploadQueue() is removed from here.
-        // WorkManager will handle starting the queue automatically.
     }
 
-    // --- CAMBIO: The 'takePhoto' function now calls 'enqueueUploadTask' ---
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return
         var projectName = etNombreProyecto.text.toString().trim()
@@ -173,12 +163,11 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // --- CAMBIO: This function now just adds to the DB and schedules the work ---
     private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true) {
         val task = UploadTask(
             imagePath = photoPath,
             projectName = projectName,
-            uuid = UUID.randomUUID().toString() // <-- THE FIX IS HERE
+            uuid = UUID.randomUUID().toString()
         )
 
         lifecycleScope.launch {
@@ -200,13 +189,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- NUEVO: This is the function that schedules the background job ---
     private fun scheduleUploadWorker() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        // CAMBIO: Usamos el método clásico con 'Builder' que es más robusto
         val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
             .setConstraints(constraints)
             .build()
@@ -265,7 +252,6 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
-    // NUEVO: Movimos los permisos y constantes de cámara aquí
     companion object {
         private const val TAG = "CameraXApp"
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -285,9 +271,6 @@ class MainActivity : AppCompatActivity() {
         private const val LAST_PROJECT_PATH = "/last-project"
     }
 
-
-
-    // NUEVO: La lógica para observar la cola ahora está en su propia función
     @SuppressLint("SetTextI18n")
     private fun observeQueue() {
         val dao = AppDatabase.getDatabase(this).uploadTaskDao()
@@ -302,7 +285,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
+    private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
         return try {
             val inputStream = contentResolver.openInputStream(uri)
             val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "$fileName.jpg")
@@ -327,7 +310,7 @@ private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
         }
     }
     private fun fetchLastProject() {
-        val baseUrl = getBaseUrl() ?: return // Get the saved IP or stop if it's not set
+        val baseUrl = getBaseUrl() ?: return
         val request = Request.Builder().url(baseUrl + LAST_PROJECT_PATH).build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -337,21 +320,21 @@ private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    val responseBodyString = response.body.string()
-                    // Add a null check here
-                    val json = JSONObject(responseBodyString)
-                    val lastProject = json.optString("last_project", "")
-                    runOnUiThread {
-                        if (lastProject.isNotBlank()) {
-                            tvLastProject.text = lastProject
-                            tvLastProject.isVisible = true
-                        } else {
-                            tvLastProject.isVisible = false
+                    response.body?.let {
+                        val responseBodyString = it.string()
+                        val json = JSONObject(responseBodyString)
+                        val lastProject = json.optString("last_project", "")
+                        runOnUiThread {
+                            if (lastProject.isNotBlank()) {
+                                tvLastProject.text = lastProject
+                                tvLastProject.isVisible = true
+                            } else {
+                                tvLastProject.isVisible = false
+                            }
                         }
                     }
                 }
             }
         })
     }
-
 }

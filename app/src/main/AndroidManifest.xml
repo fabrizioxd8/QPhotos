@@ -16,7 +16,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-
     <application
         android:name=".QPhotosApplication"
         android:allowBackup="false"
@@ -46,7 +45,7 @@
             android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
         <activity android:name=".GalleryActivity" />
         <activity android:name=".PhotoViewerActivity" android:theme="@style/Theme.MaterialComponents.NoActionBar" />
-        <activity android:name="com.example.qphotos.QueueActivity" />
+        <activity android:name=".QueueActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

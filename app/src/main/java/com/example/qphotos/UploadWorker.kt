@@ -3,7 +3,6 @@ package com.example.qphotos
 import android.content.Context
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.pm.ServiceInfo
 import android.os.Build
 
 import android.util.Log
@@ -48,11 +47,7 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             .setOngoing(true)
             .build()
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        } else {
-            ForegroundInfo(NOTIFICATION_ID, notification)
-        }
+        return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
     override suspend fun doWork(): Result {

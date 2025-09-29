@@ -12,7 +12,7 @@ class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 
     private var photoUrls: List<String> = emptyList()
     private var baseUrl: String = ""
-    private val TAG = "GalleryDebug" // Tag for our logs
+    private val TAG = "GalleryDebug"
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imageView: ImageView = view.findViewById(R.id.ivPhoto)
@@ -25,9 +25,7 @@ class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        // THE FIX IS HERE: We add "/thumbnail/" to the start of the path
         val thumbnailUrl = "$baseUrl/thumbnail/${photoUrls[position]}"
-
         Log.d(TAG, "Binding view for position: $position, URL: $thumbnailUrl")
 
         holder.imageView.load(thumbnailUrl) {
