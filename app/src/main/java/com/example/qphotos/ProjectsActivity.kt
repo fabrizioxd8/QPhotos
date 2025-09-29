@@ -99,6 +99,42 @@ class ProjectsActivity : AppCompatActivity() {
 
     private fun showRenameDialog(project: Project) {
         val editText = EditText(this).apply { setText(project.name) }
+
+        val titleView = TextView(this).apply {
+            text = "Renombrar Proyecto"
+            setPadding(60, 30, 60, 30)
+            textSize = 20f
+            setTextColor(Color.parseColor("#03CFB5"))
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setCustomTitle(titleView)
+            .setView(editText)
+            .setPositiveButton("Guardar") { _, _ ->
+                val newName = editText.text.toString().trim()
+                if (newName.isNotEmpty() && newName != project.name) {
+                    renameProject(project, newName)
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#03CFB5"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#03CFB5"))
+        }
+        dialog.show()
+    }
+
+    private fun renameProject(project: Project, newName: String) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        val url = "http://$ip:5000/project/${project.month}/${project.name}"
+
+        val json = JSONObject().apply { put("new_name", newName) }
+        val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).put(body).build()
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("Renombrar Proyecto")
             .setView(editText)
@@ -145,6 +181,35 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmationDialog(project: Project) {
+
+        val titleView = TextView(this).apply {
+            text = "Borrar Proyecto"
+            setPadding(60, 30, 60, 30)
+            textSize = 20f
+            setTextColor(Color.parseColor("#03CFB5"))
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setCustomTitle(titleView)
+            .setMessage("¿Estás seguro de que quieres borrar el proyecto '${project.name}' y todas sus fotos? Esta acción no se puede deshacer.")
+            .setPositiveButton("Borrar") { _, _ -> deleteProject(project) }
+            .setNegativeButton("Cancelar", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#03CFB5"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#03CFB5"))
+        }
+        dialog.show()
+    }
+
+    private fun deleteProject(project: Project) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        val url = "http://$ip:5000/project/${project.month}/${project.name}"
+        val request = Request.Builder().url(url).delete().build()
+
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("Borrar Proyecto")
             .setMessage("¿Estás seguro de que quieres borrar el proyecto '${project.name}' y todas sus fotos? Esta acción no se puede deshacer.")
@@ -164,6 +229,7 @@ class ProjectsActivity : AppCompatActivity() {
         val ip = prefs.getString("server_ip", null) ?: return
         val url = "http://$ip:5000/project/${project.month}/${project.name}"
         val request = Request.Builder().url(url).delete().build()
+
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
