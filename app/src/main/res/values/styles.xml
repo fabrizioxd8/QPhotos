@@ -1,9 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Style for the dropdown menu's container and text field -->
     <style name="ProjectNameDropdown" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-        <item name="boxStrokeColor">@color/brand_teal</item>
+        <!-- Border color: Grey when not focused, Brand color when focused -->
+        <item name="boxStrokeColor">@color/text_input_box_stroke</item>
+
+        <!-- Hint text color -->
         <item name="hintTextColor">@color/brand_teal</item>
-        <item name="android:textColorHint">@color/brand_teal</item>
+
+        <!-- Dropdown arrow color -->
         <item name="endIconTint">@color/brand_teal</item>
+
+        <!-- Text color, cursor, and selection handle color -->
+        <item name="android:textColor">@color/brand_teal</item>
+        <item name="android:textCursorDrawable">@null</item> <!-- Use tint for cursor -->
+        <item name="colorControlActivated">@color/brand_teal</item>
+
+        <!-- Text selection highlight color -->
+        <item name="android:textColorHighlight">@color/brand_teal_highlight</item>
     </style>
 </resources>

@@ -40,7 +40,7 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(title)
             .setTicker(title)
-            .setSmallIcon(R.drawable.ic_folder) // A more fitting icon
+            .setSmallIcon(R.drawable.ic_folder)
             .setOngoing(true)
             .build()
 
@@ -90,6 +90,9 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             if (success) {
                 Log.i(TAG, "Successfully uploaded task ${task.id}. Deleting task and file.")
                 dao.delete(task)
+                // Add a small delay to give the UI time to remove the item
+                // before the file is deleted, preventing Coil from trying to load a non-existent file.
+                delay(500)
                 File(task.imagePath).delete()
             } else {
                 task.status = "Fallido"

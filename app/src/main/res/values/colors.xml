@@ -3,4 +3,5 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="brand_teal">#03CFB5</color>
+    <color name="brand_teal_highlight">#4D03CFB5</color> <!-- 30% alpha version of brand_teal -->
 </resources>
