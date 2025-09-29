@@ -3,22 +3,22 @@ package com.example.qphotos
 import android.content.Context
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.pm.ServiceInfo
 import android.os.Build
-
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody // NUEVO: Import para streaming
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-// CAMBIO: The constructor is simplified to use the default context.
 class UploadWorker(context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
@@ -27,27 +27,28 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
         const val NOTIFICATION_ID = 1
     }
 
-
     private fun createForegroundInfo(): ForegroundInfo {
         val channelId = "upload_channel"
         val title = "Subiendo fotos..."
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(channelId, "Canal de Subida", NotificationManager.IMPORTANCE_DEFAULT)
-            // CAMBIO: Use the built-in 'applicationContext'
             val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
 
-        // CAMBIO: Use the built-in 'applicationContext'
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(title)
             .setTicker(title)
-            .setSmallIcon(android.R.drawable.ic_menu_upload)
+            .setSmallIcon(R.drawable.ic_folder) // A more fitting icon
             .setOngoing(true)
             .build()
 
-        return ForegroundInfo(NOTIFICATION_ID, notification)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(NOTIFICATION_ID, notification)
+        }
     }
 
     override suspend fun doWork(): Result {
@@ -59,7 +60,6 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             Log.e(TAG, "Error setting foreground service. Is POST_NOTIFICATIONS permission missing?", e)
         }
 
-        // CAMBIO: Use the built-in 'applicationContext' here as well
         val dao = AppDatabase.getDatabase(applicationContext).uploadTaskDao()
         val prefs = applicationContext.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         val ip = prefs.getString("server_ip", null)
@@ -76,13 +76,15 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             .readTimeout(60, TimeUnit.SECONDS)
             .build()
 
-        // CAMBIO: We now track the overall success of the batch
         var allUploadsSuccessful = true
 
         while (true) {
-            val task = dao.getNextTask() ?: break // Get next task or exit if queue is empty
+            val task = dao.getNextTask() ?: break
 
-            Log.d(TAG, "Processing task ${task.id} for project ${task.projectName}")
+            task.status = "Subiendo..."
+            dao.update(task)
+            Log.d(TAG, "Processing task ${task.id} for project ${task.projectName}. Status: Uploading")
+
             val success = uploadTask(task, client, baseUrl)
 
             if (success) {
@@ -90,13 +92,13 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
                 dao.delete(task)
                 File(task.imagePath).delete()
             } else {
+                task.status = "Fallido"
+                dao.update(task)
                 Log.e(TAG, "Failed to upload task ${task.id}.")
-                // CAMBIO: We mark the job as failed but continue the loop to the next photo
                 allUploadsSuccessful = false
             }
         }
 
-        // After attempting all photos, we return the final status
         return if (allUploadsSuccessful) {
             Log.i(TAG, "All tasks completed successfully.")
             Result.success()
@@ -111,8 +113,6 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             val file = File(task.imagePath)
             if (!file.exists()) return true
 
-            // The file is streamed directly into the request body.
-            // This uses almost no memory, no matter how big the photo is.
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("project_name", task.projectName)
@@ -132,5 +132,4 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             false
         }
     }
-
 }
