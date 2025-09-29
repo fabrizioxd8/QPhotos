@@ -26,7 +26,7 @@ class QueueAdapter(private var tasks: List<UploadTask>) : RecyclerView.Adapter<Q
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val task = tasks[position]
         holder.projectName.text = task.projectName
-        holder.status.text = "Pendiente"
+        holder.status.text = task.status
 
         val imageFile = File(task.imagePath)
         if (imageFile.exists()) {

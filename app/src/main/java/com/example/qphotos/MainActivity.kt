@@ -9,7 +9,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
-import android.widget.EditText
+import android.widget.ArrayAdapter
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -35,6 +35,7 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -52,7 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var viewFinder: PreviewView
-    private lateinit var etNombreProyecto: EditText
+    private lateinit var actvNombreProyecto: android.widget.AutoCompleteTextView
     private lateinit var tvLastProject: TextView
     private lateinit var btnFlash: ImageButton
     private var currentFlashMode: Int = ImageCapture.FLASH_MODE_OFF
@@ -61,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            var projectName = etNombreProyecto.text.toString().trim()
+            var projectName = actvNombreProyecto.text.toString().trim()
             if (projectName.isBlank()) {
                 Toast.makeText(this, "Por favor, escribe un nombre de proyecto primero", Toast.LENGTH_LONG).show()
                 return@registerForActivityResult
@@ -84,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        etNombreProyecto = findViewById(R.id.etNombreProyecto)
+        actvNombreProyecto = findViewById(R.id.actvNombreProyecto)
         tvLastProject = findViewById(R.id.tvLastProject)
         tvQueueCount = findViewById(R.id.tvQueueCount)
         viewFinder = findViewById(R.id.viewFinder)
@@ -102,7 +103,7 @@ class MainActivity : AppCompatActivity() {
 
         cameraCaptureButton.setOnClickListener { takePhoto() }
         galleryButton.setOnClickListener {
-            val projectName = etNombreProyecto.text.toString().trim()
+            val projectName = actvNombreProyecto.text.toString().trim()
             if(projectName.isBlank()) {
                 Toast.makeText(this, "Por favor, escribe un nombre de proyecto", Toast.LENGTH_SHORT).show()
             } else {
@@ -111,7 +112,7 @@ class MainActivity : AppCompatActivity() {
         }
         settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         viewProjectsButton.setOnClickListener { startActivity(Intent(this, ProjectsActivity::class.java)) }
-        tvLastProject.setOnClickListener { etNombreProyecto.setText(tvLastProject.text) }
+        tvLastProject.setOnClickListener { actvNombreProyecto.setText(tvLastProject.text) }
         tvQueueCount.setOnClickListener { startActivity(Intent(this, QueueActivity::class.java)) }
 
         btnFlash.setOnClickListener {
@@ -127,11 +128,12 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
         fetchLastProject()
         observeQueue()
+        fetchProjectList()
     }
 
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return
-        var projectName = etNombreProyecto.text.toString().trim()
+        var projectName = actvNombreProyecto.text.toString().trim()
         if (projectName.isBlank()) {
             Toast.makeText(this, "Por favor, escribe un nombre de proyecto", Toast.LENGTH_SHORT).show()
             return
@@ -331,6 +333,47 @@ class MainActivity : AppCompatActivity() {
                             } else {
                                 tvLastProject.isVisible = false
                             }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    private fun fetchProjectList() {
+        val baseUrl = getBaseUrl() ?: return
+        val request = Request.Builder().url("$baseUrl/projects").build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+                runOnUiThread {
+                    Toast.makeText(applicationContext, "No se pudo cargar la lista de proyectos", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    val responseBodyString = response.body?.string()
+                    if (responseBodyString != null) {
+                        try {
+                            val jsonArray = JSONArray(responseBodyString)
+                            val projectNames = mutableSetOf<String>()
+                            for (i in 0 until jsonArray.length()) {
+                                val project = jsonArray.getJSONObject(i)
+                                projectNames.add(project.getString("name"))
+                            }
+
+                            runOnUiThread {
+                                val adapter = ArrayAdapter(
+                                    this@MainActivity,
+                                    android.R.layout.simple_dropdown_item_1line,
+                                    projectNames.toList()
+                                )
+                                actvNombreProyecto.setAdapter(adapter)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     }
                 }
