@@ -1,9 +1,13 @@
 package com.example.qphotos
 
 import android.content.Context
+
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.graphics.drawable.Drawable
+import android.content.Context
+import android.graphics.Matrix
+import android.graphics.PointF
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -17,6 +21,7 @@ class ZoomableImageView @JvmOverloads constructor(
     private var matrix_ = Matrix()
     private var mode = NONE
 
+
     private var last = PointF()
     private var start = PointF()
     private var minScale = 1f
@@ -28,6 +33,10 @@ class ZoomableImageView @JvmOverloads constructor(
     private var saveScale = 1f
     private var origWidth = 0f
     private var origHeight = 0f
+
+    private var oldMeasuredWidth = 0
+    private var oldMeasuredHeight = 0
+
 
     private var mScaleDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
@@ -46,7 +55,11 @@ class ZoomableImageView @JvmOverloads constructor(
         scaleType = ScaleType.MATRIX
     }
 
+
     fun resetZoom() {
+
+    fun resetToInitialState() {
+
         matrix_.set(initialMatrix)
         saveScale = minScale
         imageMatrix = matrix_
@@ -54,10 +67,21 @@ class ZoomableImageView @JvmOverloads constructor(
         invalidate()
     }
 
+
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (isZoomed) {
                 resetZoom()
+
+    fun prepareForNewImage() {
+        saveScale = 1f
+    }
+
+    private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            if (isZoomed) {
+                resetToInitialState()
+
             }
             return true
         }
@@ -117,6 +141,7 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
+
         return if (contentSize <= viewSize) 0f else delta
     }
 
@@ -148,10 +173,16 @@ class ZoomableImageView @JvmOverloads constructor(
     override fun setImageDrawable(drawable: Drawable?) {
         super.setImageDrawable(drawable)
         fitToScreen()
+
+        return if (contentSize <= viewSize) {
+            0f
+        } else delta
+
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+
         val newWidth = MeasureSpec.getSize(widthMeasureSpec)
         val newHeight = MeasureSpec.getSize(heightMeasureSpec)
 
@@ -160,6 +191,42 @@ class ZoomableImageView @JvmOverloads constructor(
             viewHeight = newHeight
             fitToScreen()
         }
+
+        viewWidth = MeasureSpec.getSize(widthMeasureSpec)
+        viewHeight = MeasureSpec.getSize(heightMeasureSpec)
+        if (oldMeasuredHeight == viewWidth && oldMeasuredHeight == viewHeight || viewWidth == 0 || viewHeight == 0) {
+            return
+        }
+        oldMeasuredHeight = viewHeight
+        oldMeasuredWidth = viewWidth
+        if (saveScale == 1f) {
+            val scale: Float
+            val d = drawable
+            if (d == null) {
+                return
+            }
+            val bmWidth = d.intrinsicWidth
+            val bmHeight = d.intrinsicHeight
+            val scaleX = viewWidth.toFloat() / bmWidth.toFloat()
+            val scaleY = viewHeight.toFloat() / bmHeight.toFloat()
+            scale = scaleX.coerceAtMost(scaleY)
+            matrix_.setScale(scale, scale)
+            minScale = scale
+            saveScale = minScale
+
+            // Center the image
+            var redundantYSpace = viewHeight.toFloat() - scale * bmHeight.toFloat()
+            var redundantXSpace = viewWidth.toFloat() - scale * bmWidth.toFloat()
+            redundantYSpace /= 2f
+            redundantXSpace /= 2f
+            matrix_.postTranslate(redundantXSpace, redundantYSpace)
+            origWidth = viewWidth - 2 * redundantXSpace
+            origHeight = viewHeight - 2 * redundantYSpace
+            imageMatrix = matrix_
+            initialMatrix.set(matrix_)
+        }
+        fixTrans()
+
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
