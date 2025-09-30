@@ -228,4 +228,3 @@ class ProjectsActivity : AppCompatActivity() {
                 })
             }
         }
-

@@ -17,6 +17,7 @@ class ZoomableImageView @JvmOverloads constructor(
     private var matrix_ = Matrix()
     private var mode = NONE
 
+
     private var last = PointF()
     private var start = PointF()
     private var minScale = 1f
@@ -53,6 +54,7 @@ class ZoomableImageView @JvmOverloads constructor(
         fixTrans()
         invalidate()
     }
+
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -117,6 +119,7 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
+
         return if (contentSize <= viewSize) 0f else delta
     }
 
@@ -152,6 +155,7 @@ class ZoomableImageView @JvmOverloads constructor(
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+
         val newWidth = MeasureSpec.getSize(widthMeasureSpec)
         val newHeight = MeasureSpec.getSize(heightMeasureSpec)
 
