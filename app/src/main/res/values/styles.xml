@@ -11,12 +11,14 @@
         <!-- Dropdown arrow color -->
         <item name="endIconTint">@color/brand_teal</item>
 
-        <!-- Text color, cursor, and selection handle color -->
+        <!-- Text color and selection handle color -->
         <item name="android:textColor">@color/brand_teal</item>
-        <item name="android:textCursorDrawable">@null</item> <!-- Use tint for cursor -->
         <item name="colorControlActivated">@color/brand_teal</item>
+    </style>
 
-        <!-- Text selection highlight color -->
+    <!-- Dedicated style for the AutoCompleteTextView to ensure cursor and highlight colors are applied -->
+    <style name="BrandAutoCompleteTextView" parent="Widget.AppCompat.AutoCompleteTextView">
+        <item name="android:textCursorDrawable">@drawable/custom_cursor</item>
         <item name="android:textColorHighlight">@color/brand_teal_highlight</item>
     </style>
 </resources>
