@@ -1,3 +1,3 @@
-package com.example.qphotos // Make sure this is your package name
+package com.example.qphotos
 
 data class Project(val month: String, val name: String)

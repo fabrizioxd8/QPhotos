@@ -42,7 +42,9 @@
 
                 <AutoCompleteTextView
                     android:id="@+id/actvNombreProyecto"
+
                     style="@style/BrandAutoCompleteTextView"
+
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text" />
@@ -151,4 +153,121 @@
     app:layout_constraintTop_toTopOf="@id/camera_capture_button"
     app:tint="@android:color/white"/>
 
+
+        <TextView
+            android:id="@+id/tvLastProject"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp"
+            android:text="C.C. 0 PROYECTO"
+            android:textColor="@color/brand_teal"
+            android:visibility="gone"
+            tools:visibility="visible"/>
+
+
+        <TextView
+            android:id="@+id/tvQueueCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/queue_indicator_background"
+            android:drawablePadding="8dp"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:textColor="#333333"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:drawableStartCompat="@android:drawable/ic_popup_sync"
+            tools:text="3 foto(s) en cola" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+<ImageButton
+    android:id="@+id/view_projects_button"
+    android:layout_width="60dp"
+    android:layout_height="60dp"
+    android:layout_marginStart="32dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:contentDescription="Ver Proyectos Subidos"
+    android:elevation="2dp"
+    android:padding="12dp"
+    android:scaleType="fitCenter"
+    android:src="@drawable/ic_folder"
+    app:layout_constraintBottom_toBottomOf="@id/camera_capture_button"
+    app:layout_constraintEnd_toStartOf="@+id/camera_capture_button"
+    app:layout_constraintHorizontal_chainStyle="spread_inside"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="@id/camera_capture_button"
+    app:tint="@android:color/white"/>
+
+<ImageButton
+    android:id="@+id/camera_capture_button"
+    android:layout_width="80dp"
+    android:layout_height="80dp"
+    android:layout_marginBottom="50dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:contentDescription="Tomar Foto"
+    android:elevation="2dp"
+    android:padding="8dp"
+    android:scaleType="fitCenter"
+    android:src="@drawable/ic_shutter"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toStartOf="@+id/gallery_button"
+    app:layout_constraintStart_toEndOf="@+id/view_projects_button"
+    app:tint="@android:color/white"/>
+
+<ImageButton
+    android:id="@+id/gallery_button"
+    android:layout_width="60dp"
+    android:layout_height="60dp"
+    android:layout_marginEnd="32dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:contentDescription="Subir desde Galería"
+    android:elevation="2dp"
+    android:padding="12dp"
+    android:scaleType="fitCenter"
+    android:src="@drawable/ic_gallery"
+    app:layout_constraintBottom_toBottomOf="@id/camera_capture_button"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toEndOf="@+id/camera_capture_button"
+    app:layout_constraintTop_toTopOf="@id/camera_capture_button"
+    app:tint="@android:color/white"/>
+
+
+<ImageButton
+    android:id="@+id/btnSettings"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    android:layout_margin="16dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:src="@drawable/ic_settings"
+    android:contentDescription="Ajustes"
+    app:tint="@android:color/white"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
+
+<ImageButton
+    android:id="@+id/gallery_button"
+    android:layout_width="60dp"
+    android:layout_height="60dp"
+    android:layout_marginEnd="32dp"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:contentDescription="Subir desde Galería"
+    android:elevation="2dp"
+    android:padding="12dp"
+    android:scaleType="fitCenter"
+    android:src="@drawable/ic_gallery"
+    app:layout_constraintBottom_toBottomOf="@id/camera_capture_button"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toEndOf="@+id/camera_capture_button"
+    app:layout_constraintTop_toTopOf="@id/camera_capture_button"
+    app:tint="@android:color/white"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
