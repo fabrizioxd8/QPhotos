@@ -17,7 +17,6 @@ class ZoomableImageView @JvmOverloads constructor(
     private var matrix_ = Matrix()
     private var mode = NONE
 
-
     private var last = PointF()
     private var start = PointF()
     private var minScale = 1f
@@ -119,7 +118,6 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
-
         return if (contentSize <= viewSize) 0f else delta
     }
 
