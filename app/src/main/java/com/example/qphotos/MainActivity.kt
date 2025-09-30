@@ -1,14 +1,16 @@
 package com.example.qphotos
 
+import android.os.Build
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
-import android.widget.EditText
+import android.widget.ArrayAdapter
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -34,6 +36,7 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -48,19 +51,20 @@ import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
 
-    // --- (Most of your variables are the same) ---
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var viewFinder: PreviewView
-    private lateinit var etNombreProyecto: EditText
+    private lateinit var actvNombreProyecto: android.widget.AutoCompleteTextView
     private lateinit var tvLastProject: TextView
+    private lateinit var btnFlash: ImageButton
+    private var currentFlashMode: Int = ImageCapture.FLASH_MODE_OFF
     private lateinit var tvQueueCount: TextView
     private val client = OkHttpClient()
+    private lateinit var mediaActionSound: MediaActionSound
 
-    // The gallery launcher is updated to call the new scheduling function
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            var projectName = etNombreProyecto.text.toString().trim()
+            var projectName = actvNombreProyecto.text.toString().trim()
             if (projectName.isBlank()) {
                 Toast.makeText(this, "Por favor, escribe un nombre de proyecto primero", Toast.LENGTH_LONG).show()
                 return@registerForActivityResult
@@ -68,13 +72,14 @@ class MainActivity : AppCompatActivity() {
             if (!projectName.lowercase().startsWith("c.c. ")) {
                 projectName = "C.C. " + projectName
             }
-            Toast.makeText(this, "Añadiendo ${uris.size} fotos a la cola...", Toast.LENGTH_SHORT).show()
             for (uri in uris) {
                 val photoFile = copyUriToInternalStorage(uri, "GALLERY_${System.currentTimeMillis()}_${uris.indexOf(uri)}")
                 if (photoFile != null) {
-                    enqueueUploadTask(photoFile.absolutePath, projectName)
+                    enqueueUploadTask(photoFile.absolutePath, projectName, showToast = false)
                 }
             }
+            val message = if (uris.size == 1) "1 foto añadida a la cola." else "${uris.size} fotos añadidas a la cola."
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -82,27 +87,25 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // --- (Connecting UI is the same) ---
-        etNombreProyecto = findViewById(R.id.etNombreProyecto)
+        actvNombreProyecto = findViewById(R.id.actvNombreProyecto)
         tvLastProject = findViewById(R.id.tvLastProject)
         tvQueueCount = findViewById(R.id.tvQueueCount)
         viewFinder = findViewById(R.id.viewFinder)
         val cameraCaptureButton: ImageButton = findViewById(R.id.camera_capture_button)
-        val galleryButton: ImageButton = findViewById(R.id.gallery_button) // Using the correct ID
+        val galleryButton: ImageButton = findViewById(R.id.gallery_button)
         val settingsButton: ImageButton = findViewById(R.id.btnSettings)
-        val viewProjectsButton: ImageButton = findViewById(R.id.view_projects_button) // Using the correct ID
+        val viewProjectsButton: ImageButton = findViewById(R.id.view_projects_button)
+        btnFlash = findViewById(R.id.btnFlash)
 
-        // --- (Permission logic is the same) ---
         if (allPermissionsGranted()) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
 
-        // --- (Button listeners are the same, but uploadGalleryButton is fixed) ---
         cameraCaptureButton.setOnClickListener { takePhoto() }
         galleryButton.setOnClickListener {
-            val projectName = etNombreProyecto.text.toString().trim()
+            val projectName = actvNombreProyecto.text.toString().trim()
             if(projectName.isBlank()) {
                 Toast.makeText(this, "Por favor, escribe un nombre de proyecto", Toast.LENGTH_SHORT).show()
             } else {
@@ -111,22 +114,30 @@ class MainActivity : AppCompatActivity() {
         }
         settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         viewProjectsButton.setOnClickListener { startActivity(Intent(this, ProjectsActivity::class.java)) }
-        tvLastProject.setOnClickListener { etNombreProyecto.setText(tvLastProject.text) }
+        tvLastProject.setOnClickListener { actvNombreProyecto.setText(tvLastProject.text) }
         tvQueueCount.setOnClickListener { startActivity(Intent(this, QueueActivity::class.java)) }
 
-        // --- (The rest of onCreate is the same) ---
+        btnFlash.setOnClickListener {
+            currentFlashMode = when (currentFlashMode) {
+                ImageCapture.FLASH_MODE_OFF -> ImageCapture.FLASH_MODE_ON
+                ImageCapture.FLASH_MODE_ON -> ImageCapture.FLASH_MODE_AUTO
+                else -> ImageCapture.FLASH_MODE_OFF
+            }
+            updateFlashButtonIcon()
+            imageCapture?.flashMode = currentFlashMode
+        }
+
         cameraExecutor = Executors.newSingleThreadExecutor()
+        mediaActionSound = MediaActionSound()
+        mediaActionSound.load(MediaActionSound.SHUTTER_CLICK)
         fetchLastProject()
         observeQueue()
-
-        // CAMBIO: The call to processUploadQueue() is removed from here.
-        // WorkManager will handle starting the queue automatically.
+        fetchProjectList()
     }
 
-    // --- CAMBIO: The 'takePhoto' function now calls 'enqueueUploadTask' ---
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return
-        var projectName = etNombreProyecto.text.toString().trim()
+        var projectName = actvNombreProyecto.text.toString().trim()
         if (projectName.isBlank()) {
             Toast.makeText(this, "Por favor, escribe un nombre de proyecto", Toast.LENGTH_SHORT).show()
             return
@@ -141,6 +152,9 @@ class MainActivity : AppCompatActivity() {
         )
 
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+        Log.d(TAG, "Playing shutter sound.")
+        mediaActionSound.play(MediaActionSound.SHUTTER_CLICK)
 
         imageCapture.takePicture(
             outputOptions,
@@ -158,30 +172,37 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // --- CAMBIO: This function now just adds to the DB and schedules the work ---
-    private fun enqueueUploadTask(photoPath: String, projectName: String) {
+    private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true) {
         val task = UploadTask(
             imagePath = photoPath,
             projectName = projectName,
-            uuid = UUID.randomUUID().toString() // <-- THE FIX IS HERE
+            uuid = UUID.randomUUID().toString()
         )
 
         lifecycleScope.launch {
             AppDatabase.getDatabase(applicationContext).uploadTaskDao().insert(task)
-            Toast.makeText(applicationContext, "Foto añadida a la cola.", Toast.LENGTH_SHORT).show()
+            if (showToast) {
+                Toast.makeText(applicationContext, "Foto añadida a la cola.", Toast.LENGTH_SHORT).show()
+            }
             scheduleUploadWorker()
         }
         tvLastProject.text = projectName
         if (!tvLastProject.isVisible) { tvLastProject.isVisible = true }
     }
 
-    // --- NUEVO: This is the function that schedules the background job ---
+    private fun updateFlashButtonIcon() {
+        when (currentFlashMode) {
+            ImageCapture.FLASH_MODE_OFF -> btnFlash.setImageResource(R.drawable.ic_flash_off)
+            ImageCapture.FLASH_MODE_ON -> btnFlash.setImageResource(R.drawable.ic_flash_on)
+            ImageCapture.FLASH_MODE_AUTO -> btnFlash.setImageResource(R.drawable.ic_flash_auto)
+        }
+    }
+
     private fun scheduleUploadWorker() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        // CAMBIO: Usamos el método clásico con 'Builder' que es más robusto
         val uploadWorkRequest = OneTimeWorkRequest.Builder(UploadWorker::class.java)
             .setConstraints(constraints)
             .build()
@@ -204,7 +225,9 @@ class MainActivity : AppCompatActivity() {
                 it.surfaceProvider = viewFinder.surfaceProvider
             }
 
-            imageCapture = ImageCapture.Builder().build()
+            imageCapture = ImageCapture.Builder()
+                .setFlashMode(currentFlashMode)
+                .build()
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -236,19 +259,28 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+        mediaActionSound.release()
     }
 
-    // NUEVO: Movimos los permisos y constantes de cámara aquí
     companion object {
         private const val TAG = "CameraXApp"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        private val REQUIRED_PERMISSIONS =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            } else {
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
+            }
         private const val LAST_PROJECT_PATH = "/last-project"
     }
 
-
-
-    // NUEVO: La lógica para observar la cola ahora está en su propia función
     @SuppressLint("SetTextI18n")
     private fun observeQueue() {
         val dao = AppDatabase.getDatabase(this).uploadTaskDao()
@@ -263,7 +295,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
+    private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
         return try {
             val inputStream = contentResolver.openInputStream(uri)
             val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "$fileName.jpg")
@@ -288,7 +320,7 @@ private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
         }
     }
     private fun fetchLastProject() {
-        val baseUrl = getBaseUrl() ?: return // Get the saved IP or stop if it's not set
+        val baseUrl = getBaseUrl() ?: return
         val request = Request.Builder().url(baseUrl + LAST_PROJECT_PATH).build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -298,16 +330,17 @@ private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    val responseBodyString = response.body.string()
-                    // Add a null check here
-                    val json = JSONObject(responseBodyString)
-                    val lastProject = json.optString("last_project", "")
-                    runOnUiThread {
-                        if (lastProject.isNotBlank()) {
-                            tvLastProject.text = lastProject
-                            tvLastProject.isVisible = true
-                        } else {
-                            tvLastProject.isVisible = false
+                    response.body?.let {
+                        val responseBodyString = it.string()
+                        val json = JSONObject(responseBodyString)
+                        val lastProject = json.optString("last_project", "")
+                        runOnUiThread {
+                            if (lastProject.isNotBlank()) {
+                                tvLastProject.text = lastProject
+                                tvLastProject.isVisible = true
+                            } else {
+                                tvLastProject.isVisible = false
+                            }
                         }
                     }
                 }
@@ -315,4 +348,44 @@ private fun copyUriToInternalStorage(uri: Uri, fileName: String): File? {
         })
     }
 
+    private fun fetchProjectList() {
+        val baseUrl = getBaseUrl() ?: return
+        val request = Request.Builder().url("$baseUrl/projects").build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+                runOnUiThread {
+                    Toast.makeText(applicationContext, "No se pudo cargar la lista de proyectos", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    val responseBodyString = response.body?.string()
+                    if (responseBodyString != null) {
+                        try {
+                            val jsonArray = JSONArray(responseBodyString)
+                            val projectNames = mutableSetOf<String>()
+                            for (i in 0 until jsonArray.length()) {
+                                val project = jsonArray.getJSONObject(i)
+                                projectNames.add(project.getString("name"))
+                            }
+
+                            runOnUiThread {
+                                val adapter = ArrayAdapter(
+                                    this@MainActivity,
+                                    android.R.layout.simple_dropdown_item_1line,
+                                    projectNames.toList()
+                                )
+                                actvNombreProyecto.setAdapter(adapter)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        })
+    }
 }
