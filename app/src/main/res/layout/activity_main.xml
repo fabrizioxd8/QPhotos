@@ -19,38 +19,6 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent">
 
-
-
-<androidx.cardview.widget.CardView
-    android:id="@+id/controls_card"
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="24dp"
-    android:layout_marginTop="80dp"
-    android:layout_marginEnd="24dp"
-    app:cardBackgroundColor="@android:color/white"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="10dp"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent">
-
-
-    <!-- This is the settings button you requested, in the top-left corner -->
-    <ImageButton
-        android:id="@+id/btnSettings"
-        android:layout_width="13dp"
-        android:layout_height="12dp"
-        android:layout_gravity="top|start"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="4dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Ajustes"
-        android:padding="4dp"
-        android:src="@drawable/ic_settings"
-        app:tint="@android:color/white" />
-
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -77,8 +45,6 @@
 
                     style="@style/BrandAutoCompleteTextView"
 
-                    style="@style/BrandAutoCompleteTextView"
-
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text" />
@@ -94,14 +60,7 @@
                 android:contentDescription="Flash"
                 android:padding="4dp"
                 android:scaleType="fitCenter"
-
                 android:src="@drawable/ic_flash_off_24dp"
-
-
-                android:src="@drawable/ic_flash_off_24dp"
-
-                android:src="@drawable/ic_flash_off"
-
                 app:tint="?attr/colorOnSurface" />
 
         </LinearLayout>
@@ -115,13 +74,9 @@
             android:background="?android:attr/selectableItemBackground"
             android:padding="8dp"
             android:text="C.C. 0 PROYECTO"
-
             android:textColor="@color/brand_teal"
             android:visibility="gone"
             tools:visibility="visible"/>
-
-
-            android:textColor="@color/brand_teal" />
 
 
         <TextView
@@ -180,7 +135,6 @@
     app:layout_constraintStart_toEndOf="@+id/view_projects_button"
     app:tint="@android:color/white"/>
 
-
 <ImageButton
     android:id="@+id/gallery_button"
     android:layout_width="60dp"
@@ -198,6 +152,7 @@
     app:layout_constraintTop_toTopOf="@id/camera_capture_button"
     app:tint="@android:color/white"/>
 
+
 <ImageButton
     android:id="@+id/btnSettings"
     android:layout_width="48dp"
@@ -209,7 +164,6 @@
     app:tint="@android:color/white"
     app:layout_constraintTop_toTopOf="parent"
     app:layout_constraintEnd_toEndOf="parent" />
-
 
 <ImageButton
     android:id="@+id/gallery_button"
