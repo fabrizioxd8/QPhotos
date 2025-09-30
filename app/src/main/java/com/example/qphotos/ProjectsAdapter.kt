@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 class ProjectsAdapter(
     private var projects: List<Project>,
     private val onItemClicked: (Project) -> Unit,
-    private val onItemLongClicked: (Project) -> Unit
+    private val onItemLongClicked: (Project) -> Unit // Listener for the long click
 ) : RecyclerView.Adapter<ProjectsAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -26,19 +26,18 @@ class ProjectsAdapter(
         val project = projects[position]
         holder.projectName.text = project.name
 
-        holder.itemView.setOnClickListener {
-            onItemClicked(project)
-        }
+        holder.itemView.setOnClickListener { onItemClicked(project) }
+
         holder.itemView.setOnLongClickListener {
             onItemLongClicked(project)
-            true
+            true // We handled the event
         }
     }
 
     override fun getItemCount() = projects.size
 
     fun updateProjects(newProjects: List<Project>) {
-        projects = newProjects
+        this.projects = newProjects
         notifyDataSetChanged()
     }
 }

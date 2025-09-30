@@ -54,7 +54,6 @@ class ZoomableImageView @JvmOverloads constructor(
         invalidate()
     }
 
-
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (isZoomed) {
@@ -153,7 +152,6 @@ class ZoomableImageView @JvmOverloads constructor(
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-
         val newWidth = MeasureSpec.getSize(widthMeasureSpec)
         val newHeight = MeasureSpec.getSize(heightMeasureSpec)
 
