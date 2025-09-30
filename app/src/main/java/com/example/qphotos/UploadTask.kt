@@ -8,5 +8,6 @@ data class UploadTask(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val imagePath: String,
     val projectName: String,
-    val uuid: String
+    val uuid: String,
+    var status: String = "Pending"
 )
