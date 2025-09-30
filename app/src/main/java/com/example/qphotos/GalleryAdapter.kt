@@ -12,7 +12,7 @@ class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 
     private var photoUrls: List<String> = emptyList()
     private var baseUrl: String = ""
-    private val TAG = "GalleryDebug"
+    private val TAG = "GalleryDebug" // Tag for our logs
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imageView: ImageView = view.findViewById(R.id.ivPhoto)
@@ -25,7 +25,9 @@ class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        // THE FIX IS HERE: We add "/thumbnail/" to the start of the path
         val thumbnailUrl = "$baseUrl/thumbnail/${photoUrls[position]}"
+
         Log.d(TAG, "Binding view for position: $position, URL: $thumbnailUrl")
 
         holder.imageView.load(thumbnailUrl) {
@@ -37,16 +39,6 @@ class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
                     Log.e(TAG, "Coil error loading image: ${result.throwable}")
                 }
             )
-        }
-
-        holder.itemView.setOnClickListener {
-            val context = holder.itemView.context
-            val intent = android.content.Intent(context, PhotoViewerActivity::class.java).apply {
-                putStringArrayListExtra("PHOTO_URLS", ArrayList(photoUrls))
-                putExtra("CURRENT_POSITION", position)
-                putExtra("BASE_URL", baseUrl)
-            }
-            context.startActivity(intent)
         }
     }
 
