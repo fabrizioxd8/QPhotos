@@ -1,6 +1,10 @@
 package com.example.qphotos
 
 import android.content.Context
+import android.graphics.Matrix
+import android.graphics.PointF
+import android.graphics.drawable.Drawable
+
 
 import android.graphics.Matrix
 import android.graphics.PointF
@@ -8,6 +12,7 @@ import android.graphics.drawable.Drawable
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
+
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -34,6 +39,7 @@ class ZoomableImageView @JvmOverloads constructor(
     private var origWidth = 0f
     private var origHeight = 0f
 
+
     private var oldMeasuredWidth = 0
     private var oldMeasuredHeight = 0
 
@@ -55,12 +61,7 @@ class ZoomableImageView @JvmOverloads constructor(
         scaleType = ScaleType.MATRIX
     }
 
-
     fun resetZoom() {
-
-    fun resetToInitialState() {
-
-        matrix_.set(initialMatrix)
         saveScale = minScale
         imageMatrix = matrix_
         fixTrans()
@@ -177,6 +178,7 @@ class ZoomableImageView @JvmOverloads constructor(
         return if (contentSize <= viewSize) {
             0f
         } else delta
+
 
     }
 
