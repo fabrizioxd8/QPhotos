@@ -12,12 +12,28 @@
     android:layout_marginStart="24dp"
     android:layout_marginTop="80dp"
     android:layout_marginEnd="24dp"
-    app:cardBackgroundColor="@android:color/white"
+    app:cardBackgroundColor="?attr/colorSurface" 
+
     app:cardCornerRadius="8dp"
     app:cardElevation="10dp"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent">
+
+
+    <!-- This is the settings button you requested, in the top-left corner -->
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="13dp"
+        android:layout_height="12dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Ajustes"
+        android:padding="4dp"
+        android:src="@drawable/ic_settings"
+        app:tint="@android:color/transparent" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -42,7 +58,7 @@
 
                 <AutoCompleteTextView
                     android:id="@+id/actvNombreProyecto"
-                    style="@style/BrandAutoCompleteTextView"
+                    style="@style/ProjectNameDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text" />
@@ -75,6 +91,7 @@
             android:textColor="@color/brand_teal"
             android:visibility="gone"
             tools:visibility="visible"/>
+
 
 
 
@@ -134,6 +151,8 @@
     app:layout_constraintStart_toEndOf="@+id/view_projects_button"
     app:tint="@android:color/white"/>
 
+
+
 <ImageButton
     android:id="@+id/gallery_button"
     android:layout_width="60dp"
@@ -150,5 +169,4 @@
     app:layout_constraintStart_toEndOf="@+id/camera_capture_button"
     app:layout_constraintTop_toTopOf="@id/camera_capture_button"
     app:tint="@android:color/white"/>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

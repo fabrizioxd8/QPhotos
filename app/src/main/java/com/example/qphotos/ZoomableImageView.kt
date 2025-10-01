@@ -3,6 +3,7 @@ package com.example.qphotos
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
+
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -40,6 +41,7 @@ class ZoomableImageView @JvmOverloads constructor(
         super.setClickable(true)
         mScaleDetector = ScaleGestureDetector(context, ScaleListener())
         gestureDetector = GestureDetector(context, GestureListener())
+
         matrix_.setTranslate(1f, 1f)
         m = FloatArray(9)
         imageMatrix = matrix_
@@ -62,6 +64,7 @@ class ZoomableImageView @JvmOverloads constructor(
             return true
         }
     }
+
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
@@ -117,6 +120,7 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
+
         return if (contentSize <= viewSize) 0f else delta
     }
 
@@ -148,10 +152,12 @@ class ZoomableImageView @JvmOverloads constructor(
     override fun setImageDrawable(drawable: Drawable?) {
         super.setImageDrawable(drawable)
         fitToScreen()
+
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+
         val newWidth = MeasureSpec.getSize(widthMeasureSpec)
         val newHeight = MeasureSpec.getSize(heightMeasureSpec)
 
@@ -160,12 +166,14 @@ class ZoomableImageView @JvmOverloads constructor(
             viewHeight = newHeight
             fitToScreen()
         }
+
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         mScaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
         val curr = PointF(event.x, event.y)
+
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -187,11 +195,13 @@ class ZoomableImageView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 parent.requestDisallowInterceptTouchEvent(false)
+
                 mode = NONE
                 val xDiff = Math.abs(curr.x - start.x).toInt()
                 val yDiff = Math.abs(curr.y - start.y).toInt()
                 if (xDiff < CLICK && yDiff < CLICK) performClick()
             }
+
         }
         imageMatrix = matrix_
         invalidate()
