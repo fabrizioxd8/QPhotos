@@ -11,11 +11,14 @@
         <!-- Dropdown arrow color -->
         <item name="endIconTint">@color/brand_teal</item>
 
-        <!-- Text color, cursor, and selection handle color -->
-        <item name="android:textColor">@color/brand_teal</item>
+        <!-- Text color -->
+        <item name="android:textColor">@android:color/black</item>
+        <!-- Cursor and selection handle color (attempt) -->
         <item name="colorControlActivated">@color/brand_teal</item>
 
         <!-- Text selection highlight color -->
         <item name="android:textColorHighlight">@color/brand_teal_highlight</item>
     </style>
+
+
 </resources>

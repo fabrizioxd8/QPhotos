@@ -4,6 +4,8 @@
         <!-- Customize your light theme here. -->
         <item name="android:statusBarColor">@color/brand_teal</item>
         <item name="android:navigationBarColor">@color/brand_teal</item>
+        <item name="colorPrimary">@color/brand_teal</item>
+        <!-- We had added colorControlActivated, colorPrimary, colorSecondary here. Removing them. -->
     </style>
 
     <style name="Theme.QPhotos" parent="Base.Theme.QPhotos" />
