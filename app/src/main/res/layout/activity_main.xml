@@ -13,11 +13,13 @@
     android:layout_marginTop="80dp"
     android:layout_marginEnd="24dp"
     app:cardBackgroundColor="?attr/colorSurface" 
+
     app:cardCornerRadius="8dp"
     app:cardElevation="10dp"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent">
+
 
     <!-- This is the settings button you requested, in the top-left corner -->
     <ImageButton
@@ -86,7 +88,10 @@
             android:background="?android:attr/selectableItemBackground"
             android:padding="8dp"
             android:text="C.C. 0 PROYECTO"
-            android:textColor="@color/brand_teal" />
+            android:textColor="@color/brand_teal"
+            android:visibility="gone"
+            tools:visibility="visible"/>
+
 
 
 
@@ -145,6 +150,8 @@
     app:layout_constraintEnd_toStartOf="@+id/gallery_button"
     app:layout_constraintStart_toEndOf="@+id/view_projects_button"
     app:tint="@android:color/white"/>
+
+
 
 <ImageButton
     android:id="@+id/gallery_button"

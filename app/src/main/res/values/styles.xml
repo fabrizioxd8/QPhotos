@@ -11,6 +11,7 @@
         <!-- Dropdown arrow color -->
         <item name="endIconTint">@color/brand_teal</item>
 
+
         <!-- Cursor and selection handle color (attempt) -->
         <item name="colorControlActivated">@color/brand_teal</item>
 

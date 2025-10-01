@@ -3,7 +3,10 @@ package com.example.qphotos
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
+
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import androidx.appcompat.widget.AppCompatImageView
@@ -15,7 +18,6 @@ class ZoomableImageView @JvmOverloads constructor(
     private var matrix_ = Matrix()
     private var mode = NONE
 
-    // Remember some things for zooming
     private var last = PointF()
     private var start = PointF()
     private var minScale = 1f
@@ -27,19 +29,42 @@ class ZoomableImageView @JvmOverloads constructor(
     private var saveScale = 1f
     private var origWidth = 0f
     private var origHeight = 0f
-    private var oldMeasuredWidth = 0
-    private var oldMeasuredHeight = 0
 
     private var mScaleDetector: ScaleGestureDetector
+    private lateinit var gestureDetector: GestureDetector
+    private var initialMatrix = Matrix()
+
+    val isZoomed: Boolean
+        get() = saveScale > minScale
 
     init {
         super.setClickable(true)
         mScaleDetector = ScaleGestureDetector(context, ScaleListener())
+        gestureDetector = GestureDetector(context, GestureListener())
+
         matrix_.setTranslate(1f, 1f)
         m = FloatArray(9)
         imageMatrix = matrix_
         scaleType = ScaleType.MATRIX
     }
+
+    fun resetZoom() {
+        matrix_.set(initialMatrix)
+        saveScale = minScale
+        imageMatrix = matrix_
+        fixTrans()
+        invalidate()
+    }
+
+    private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            if (isZoomed) {
+                resetZoom()
+            }
+            return true
+        }
+    }
+
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
@@ -95,72 +120,88 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
-        return if (contentSize <= viewSize) {
-            0f
-        } else delta
+
+        return if (contentSize <= viewSize) 0f else delta
+    }
+
+    private fun fitToScreen() {
+        val d = drawable ?: return
+        val bmWidth = d.intrinsicWidth
+        val bmHeight = d.intrinsicHeight
+        if (bmWidth == 0 || bmHeight == 0 || viewWidth == 0 || viewHeight == 0) return
+
+        val scaleX = viewWidth.toFloat() / bmWidth.toFloat()
+        val scaleY = viewHeight.toFloat() / bmHeight.toFloat()
+        val scale = scaleX.coerceAtMost(scaleY)
+
+        matrix_.reset()
+        matrix_.setScale(scale, scale)
+        minScale = scale
+        saveScale = scale
+
+        val redundantYSpace = viewHeight.toFloat() - scale * bmHeight.toFloat()
+        val redundantXSpace = viewWidth.toFloat() - scale * bmWidth.toFloat()
+        matrix_.postTranslate(redundantXSpace / 2, redundantYSpace / 2)
+
+        initialMatrix.set(matrix_)
+        imageMatrix = matrix_
+        fixTrans()
+        invalidate()
+    }
+
+    override fun setImageDrawable(drawable: Drawable?) {
+        super.setImageDrawable(drawable)
+        fitToScreen()
+
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        viewWidth = MeasureSpec.getSize(widthMeasureSpec)
-        viewHeight = MeasureSpec.getSize(heightMeasureSpec)
-        if (oldMeasuredHeight == viewWidth && oldMeasuredHeight == viewHeight || viewWidth == 0 || viewHeight == 0) {
-            return
-        }
-        oldMeasuredHeight = viewHeight
-        oldMeasuredWidth = viewWidth
-        if (saveScale == 1f) {
-            val scale: Float
-            val d = drawable
-            if (d == null) {
-                return
-            }
-            val bmWidth = d.intrinsicWidth
-            val bmHeight = d.intrinsicHeight
-            val scaleX = viewWidth.toFloat() / bmWidth.toFloat()
-            val scaleY = viewHeight.toFloat() / bmHeight.toFloat()
-            scale = scaleX.coerceAtMost(scaleY)
-            matrix_.setScale(scale, scale)
-            saveScale = 1f
 
-            // Center the image
-            var redundantYSpace = viewHeight.toFloat() - scale * bmHeight.toFloat()
-            var redundantXSpace = viewWidth.toFloat() - scale * bmWidth.toFloat()
-            redundantYSpace /= 2f
-            redundantXSpace /= 2f
-            matrix_.postTranslate(redundantXSpace, redundantYSpace)
-            origWidth = viewWidth - 2 * redundantXSpace
-            origHeight = viewHeight - 2 * redundantYSpace
-            imageMatrix = matrix_
+        val newWidth = MeasureSpec.getSize(widthMeasureSpec)
+        val newHeight = MeasureSpec.getSize(heightMeasureSpec)
+
+        if (newWidth != viewWidth || newHeight != viewHeight) {
+            viewWidth = newWidth
+            viewHeight = newHeight
+            fitToScreen()
         }
-        fixTrans()
+
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         mScaleDetector.onTouchEvent(event)
+        gestureDetector.onTouchEvent(event)
         val curr = PointF(event.x, event.y)
+
+
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 last.set(curr)
                 start.set(last)
                 mode = DRAG
             }
-            MotionEvent.ACTION_MOVE -> if (mode == DRAG) {
-                val deltaX = curr.x - last.x
-                val deltaY = curr.y - last.y
-                val fixTransX = getFixDragTrans(deltaX, viewWidth.toFloat(), origWidth * saveScale)
-                val fixTransY = getFixDragTrans(deltaY, viewHeight.toFloat(), origHeight * saveScale)
-                matrix_.postTranslate(fixTransX, fixTransY)
-                fixTrans()
-                last.set(curr.x, curr.y)
+            MotionEvent.ACTION_MOVE -> {
+                if (mode == DRAG) {
+                    parent.requestDisallowInterceptTouchEvent(isZoomed)
+                    val deltaX = curr.x - last.x
+                    val deltaY = curr.y - last.y
+                    val fixTransX = getFixDragTrans(deltaX, viewWidth.toFloat(), origWidth * saveScale)
+                    val fixTransY = getFixDragTrans(deltaY, viewHeight.toFloat(), origHeight * saveScale)
+                    matrix_.postTranslate(fixTransX, fixTransY)
+                    fixTrans()
+                    last.set(curr.x, curr.y)
+                }
             }
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                parent.requestDisallowInterceptTouchEvent(false)
+
                 mode = NONE
                 val xDiff = Math.abs(curr.x - start.x).toInt()
                 val yDiff = Math.abs(curr.y - start.y).toInt()
                 if (xDiff < CLICK && yDiff < CLICK) performClick()
             }
-            MotionEvent.ACTION_POINTER_UP -> mode = NONE
+
         }
         imageMatrix = matrix_
         invalidate()
