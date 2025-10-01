@@ -11,8 +11,6 @@
         <!-- Dropdown arrow color -->
         <item name="endIconTint">@color/brand_teal</item>
 
-        <!-- Text color -->
-        <item name="android:textColor">@android:color/black</item>
         <!-- Cursor and selection handle color (attempt) -->
         <item name="colorControlActivated">@color/brand_teal</item>
 
