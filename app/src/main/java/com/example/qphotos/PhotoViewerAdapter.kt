@@ -10,9 +10,8 @@ class PhotoViewerAdapter(private val photoUrls: List<String>, private val baseUr
     RecyclerView.Adapter<PhotoViewerAdapter.PhotoViewHolder>() {
 
     class PhotoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-
+        // Correctly type the imageView as ZoomableImageView
         val imageView: ZoomableImageView = view.findViewById(R.id.imageView)
-
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
@@ -23,7 +22,6 @@ class PhotoViewerAdapter(private val photoUrls: List<String>, private val baseUr
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
         val fullUrl = "$baseUrl/uploads/${photoUrls[position]}"
-
 
         // Reset zoom before loading a new image to handle view recycling correctly.
         holder.imageView.resetZoom()
@@ -36,7 +34,6 @@ class PhotoViewerAdapter(private val photoUrls: List<String>, private val baseUr
             listener(
                 onSuccess = { _, _ -> holder.imageView.resetZoom() }
             )
-
         }
     }
 

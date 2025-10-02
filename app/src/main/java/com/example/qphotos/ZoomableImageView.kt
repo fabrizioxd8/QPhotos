@@ -12,9 +12,6 @@ import android.view.ScaleGestureDetector
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.widget.AppCompatImageView
 
-import kotlin.math.abs
-
-
 class ZoomableImageView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : AppCompatImageView(context, attrs, defStyleAttr) {
@@ -22,8 +19,6 @@ class ZoomableImageView @JvmOverloads constructor(
     private var matrix_ = Matrix()
     private var mode = NONE
 
-    private var last = PointF()
-    private var start = PointF()
     private var minScale = 1f
     private var maxScale = 4f
     private var m: FloatArray
@@ -39,9 +34,7 @@ class ZoomableImageView @JvmOverloads constructor(
     private var currentAnimator: ValueAnimator? = null
 
     private val isZoomed: Boolean
-
         get() = saveScale > minScale + 0.01f
-
 
     init {
         super.setClickable(true)
@@ -61,12 +54,10 @@ class ZoomableImageView @JvmOverloads constructor(
     private fun animateZoom(targetScale: Float, focusX: Float, focusY: Float) {
         currentAnimator?.cancel()
 
-
         val startScale = saveScale
         val endScale = targetScale.coerceIn(minScale, maxScale)
 
         currentAnimator = ValueAnimator.ofFloat(startScale, endScale).apply {
-
             interpolator = AccelerateDecelerateInterpolator()
             duration = 300
             addUpdateListener { animation ->
@@ -91,6 +82,20 @@ class ZoomableImageView @JvmOverloads constructor(
             }
             return true
         }
+
+        override fun onScroll(
+            e1: MotionEvent?,
+            e2: MotionEvent,
+            distanceX: Float,
+            distanceY: Float
+        ): Boolean {
+            // Pan only when zoomed
+            if (isZoomed) {
+                matrix_.postTranslate(-distanceX, -distanceY)
+                fixTrans()
+            }
+            return true
+        }
     }
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -112,9 +117,7 @@ class ZoomableImageView @JvmOverloads constructor(
                 mScaleFactor = minScale / origScale
             }
 
-
             matrix_.postScale(mScaleFactor, mScaleFactor, detector.focusX, detector.focusY)
-
             fixTrans()
             return true
         }
@@ -124,7 +127,6 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.getValues(m)
         val transX = m[Matrix.MTRANS_X]
         val transY = m[Matrix.MTRANS_Y]
-
 
         val contentWidth = origWidth * saveScale
         val contentHeight = origHeight * saveScale
@@ -146,7 +148,6 @@ class ZoomableImageView @JvmOverloads constructor(
         if (fixTransX != 0f || fixTransY != 0f) {
             matrix_.postTranslate(fixTransX, fixTransY)
         }
-
     }
 
     private fun fitToScreen() {
@@ -172,7 +173,6 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.postTranslate(redundantXSpace / 2, redundantYSpace / 2)
 
         imageMatrix = matrix_
-
     }
 
     override fun setImageDrawable(drawable: Drawable?) {
@@ -195,37 +195,22 @@ class ZoomableImageView @JvmOverloads constructor(
         mScaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
 
-        val curr = PointF(event.x, event.y)
-
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-
                 mode = DRAG
-                last.set(curr)
-                start.set(last)
                 parent.requestDisallowInterceptTouchEvent(true)
             }
-
             MotionEvent.ACTION_MOVE -> {
-                if (mode == DRAG) {
-                    val deltaX = curr.x - last.x
-                    val deltaY = curr.y - last.y
-                    matrix_.postTranslate(deltaX, deltaY)
-                    fixTrans()
-                    last.set(curr.x, curr.y)
-                }
+                // Drag logic is now handled by onScroll in GestureListener
                 parent.requestDisallowInterceptTouchEvent(isZoomed || mode == ZOOM)
             }
-
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 mode = NONE
                 parent.requestDisallowInterceptTouchEvent(false)
             }
-
             MotionEvent.ACTION_POINTER_DOWN -> {
                 mode = ZOOM
             }
-
             MotionEvent.ACTION_POINTER_UP -> {
                 mode = DRAG
             }
