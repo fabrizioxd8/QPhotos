@@ -37,6 +37,7 @@ class ZoomableImageView @JvmOverloads constructor(
     private var mScaleDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
     private var currentAnimator: ValueAnimator? = null
+    private var isReady = false
 
     private val isZoomed: Boolean
 
@@ -83,21 +84,12 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
-        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-            // We consume the event and do nothing, to prevent the default behavior
-            return true
-        }
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (isZoomed) {
                 animateZoom(minScale, e.x, e.y)
             } else {
                 animateZoom(minScale * 2.5f, e.x, e.y)
             }
-            return true
-        }
-
-        override fun onDoubleTapEvent(e: MotionEvent): Boolean {
-            // Consume the event to prevent drag mode from being activated, which causes a jump
             return true
         }
     }
@@ -181,7 +173,7 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.postTranslate(redundantXSpace / 2, redundantYSpace / 2)
 
         imageMatrix = matrix_
-
+        isReady = true
     }
 
     override fun setImageDrawable(drawable: Drawable?) {
@@ -201,6 +193,11 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!isReady) {
+            // Block touch events until the view is ready
+            return true
+        }
+
         mScaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
 
