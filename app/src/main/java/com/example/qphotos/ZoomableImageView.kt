@@ -1,14 +1,15 @@
 package com.example.qphotos
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
-
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.widget.AppCompatImageView
 
 class ZoomableImageView @JvmOverloads constructor(
@@ -32,16 +33,15 @@ class ZoomableImageView @JvmOverloads constructor(
 
     private var mScaleDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
-    private var initialMatrix = Matrix()
+    private var currentAnimator: ValueAnimator? = null
 
-    val isZoomed: Boolean
-        get() = saveScale > minScale
+    private val isZoomed: Boolean
+        get() = saveScale > minScale + 0.01f // Use a tolerance for float comparison
 
     init {
         super.setClickable(true)
         mScaleDetector = ScaleGestureDetector(context, ScaleListener())
         gestureDetector = GestureDetector(context, GestureListener())
-
         matrix_.setTranslate(1f, 1f)
         m = FloatArray(9)
         imageMatrix = matrix_
@@ -49,25 +49,41 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     fun resetZoom() {
-        matrix_.set(initialMatrix)
-        saveScale = minScale
-        imageMatrix = matrix_
-        fixTrans()
+        fitToScreen()
         invalidate()
+    }
+
+    private fun animateZoom(targetScale: Float, focusX: Float, focusY: Float) {
+        currentAnimator?.cancel()
+        currentAnimator = ValueAnimator.ofFloat(saveScale, targetScale).apply {
+            interpolator = AccelerateDecelerateInterpolator()
+            duration = 300
+            addUpdateListener { animation ->
+                val newScale = animation.animatedValue as Float
+                val scaleFactor = newScale / saveScale
+                saveScale = newScale
+                matrix_.postScale(scaleFactor, scaleFactor, focusX, focusY)
+                fixTrans()
+                imageMatrix = matrix_
+            }
+            start()
+        }
     }
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (isZoomed) {
-                resetZoom()
+                animateZoom(minScale, e.x, e.y)
+            } else {
+                animateZoom(minScale * 2.5f, e.x, e.y)
             }
             return true
         }
     }
 
-
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+            currentAnimator?.cancel()
             mode = ZOOM
             return true
         }
@@ -120,11 +136,11 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
-
         return if (contentSize <= viewSize) 0f else delta
     }
 
     private fun fitToScreen() {
+        currentAnimator?.cancel()
         val d = drawable ?: return
         val bmWidth = d.intrinsicWidth
         val bmHeight = d.intrinsicHeight
@@ -141,32 +157,28 @@ class ZoomableImageView @JvmOverloads constructor(
 
         val redundantYSpace = viewHeight.toFloat() - scale * bmHeight.toFloat()
         val redundantXSpace = viewWidth.toFloat() - scale * bmWidth.toFloat()
+        origWidth = viewWidth - redundantXSpace
+        origHeight = viewHeight - redundantYSpace
         matrix_.postTranslate(redundantXSpace / 2, redundantYSpace / 2)
 
-        initialMatrix.set(matrix_)
         imageMatrix = matrix_
         fixTrans()
-        invalidate()
     }
 
     override fun setImageDrawable(drawable: Drawable?) {
         super.setImageDrawable(drawable)
         fitToScreen()
-
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-
         val newWidth = MeasureSpec.getSize(widthMeasureSpec)
         val newHeight = MeasureSpec.getSize(heightMeasureSpec)
-
         if (newWidth != viewWidth || newHeight != viewHeight) {
             viewWidth = newWidth
             viewHeight = newHeight
             fitToScreen()
         }
-
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -174,9 +186,9 @@ class ZoomableImageView @JvmOverloads constructor(
         gestureDetector.onTouchEvent(event)
         val curr = PointF(event.x, event.y)
 
-
-        when (event.action) {
+        when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                parent.requestDisallowInterceptTouchEvent(true)
                 last.set(curr)
                 start.set(last)
                 mode = DRAG
@@ -193,15 +205,13 @@ class ZoomableImageView @JvmOverloads constructor(
                     last.set(curr.x, curr.y)
                 }
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 parent.requestDisallowInterceptTouchEvent(false)
-
                 mode = NONE
-                val xDiff = Math.abs(curr.x - start.x).toInt()
-                val yDiff = Math.abs(curr.y - start.y).toInt()
-                if (xDiff < CLICK && yDiff < CLICK) performClick()
             }
-
+            MotionEvent.ACTION_POINTER_UP -> {
+                mode = NONE
+            }
         }
         imageMatrix = matrix_
         invalidate()
@@ -212,6 +222,5 @@ class ZoomableImageView @JvmOverloads constructor(
         const val NONE = 0
         const val DRAG = 1
         const val ZOOM = 2
-        const val CLICK = 3
     }
 }
