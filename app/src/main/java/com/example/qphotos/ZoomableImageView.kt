@@ -12,6 +12,9 @@ import android.view.ScaleGestureDetector
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.widget.AppCompatImageView
 
+import kotlin.math.abs
+
+
 class ZoomableImageView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : AppCompatImageView(context, attrs, defStyleAttr) {
@@ -36,7 +39,9 @@ class ZoomableImageView @JvmOverloads constructor(
     private var currentAnimator: ValueAnimator? = null
 
     private val isZoomed: Boolean
-        get() = saveScale > minScale + 0.01f // Use a tolerance for float comparison
+
+        get() = saveScale > minScale + 0.01f
+
 
     init {
         super.setClickable(true)
@@ -55,13 +60,20 @@ class ZoomableImageView @JvmOverloads constructor(
 
     private fun animateZoom(targetScale: Float, focusX: Float, focusY: Float) {
         currentAnimator?.cancel()
-        currentAnimator = ValueAnimator.ofFloat(saveScale, targetScale).apply {
+
+
+        val startScale = saveScale
+        val endScale = targetScale.coerceIn(minScale, maxScale)
+
+        currentAnimator = ValueAnimator.ofFloat(startScale, endScale).apply {
+
             interpolator = AccelerateDecelerateInterpolator()
             duration = 300
             addUpdateListener { animation ->
                 val newScale = animation.animatedValue as Float
                 val scaleFactor = newScale / saveScale
                 saveScale = newScale
+
                 matrix_.postScale(scaleFactor, scaleFactor, focusX, focusY)
                 fixTrans()
                 imageMatrix = matrix_
@@ -100,11 +112,9 @@ class ZoomableImageView @JvmOverloads constructor(
                 mScaleFactor = minScale / origScale
             }
 
-            if (origWidth * saveScale <= viewWidth || origHeight * saveScale <= viewHeight) {
-                matrix_.postScale(mScaleFactor, mScaleFactor, viewWidth / 2f, viewHeight / 2f)
-            } else {
-                matrix_.postScale(mScaleFactor, mScaleFactor, detector.focusX, detector.focusY)
-            }
+
+            matrix_.postScale(mScaleFactor, mScaleFactor, detector.focusX, detector.focusY)
+
             fixTrans()
             return true
         }
@@ -114,29 +124,29 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.getValues(m)
         val transX = m[Matrix.MTRANS_X]
         val transY = m[Matrix.MTRANS_Y]
-        val fixTransX = getFixTrans(transX, viewWidth.toFloat(), origWidth * saveScale)
-        val fixTransY = getFixTrans(transY, viewHeight.toFloat(), origHeight * saveScale)
+
+
+        val contentWidth = origWidth * saveScale
+        val contentHeight = origHeight * saveScale
+
+        val fixTransX = when {
+            contentWidth < viewWidth -> (viewWidth - contentWidth) / 2 - transX
+            transX > 0 -> -transX
+            transX < viewWidth - contentWidth -> viewWidth - contentWidth - transX
+            else -> 0f
+        }
+
+        val fixTransY = when {
+            contentHeight < viewHeight -> (viewHeight - contentHeight) / 2 - transY
+            transY > 0 -> -transY
+            transY < viewHeight - contentHeight -> viewHeight - contentHeight - transY
+            else -> 0f
+        }
+
         if (fixTransX != 0f || fixTransY != 0f) {
             matrix_.postTranslate(fixTransX, fixTransY)
         }
-    }
 
-    private fun getFixTrans(trans: Float, viewSize: Float, contentSize: Float): Float {
-        val minTrans: Float
-        val maxTrans: Float
-        if (contentSize <= viewSize) {
-            minTrans = 0f
-            maxTrans = viewSize - contentSize
-        } else {
-            minTrans = viewSize - contentSize
-            maxTrans = 0f
-        }
-        if (trans < minTrans) return -trans + minTrans
-        return if (trans > maxTrans) -trans + maxTrans else 0f
-    }
-
-    private fun getFixDragTrans(delta: Float, viewSize: Float, contentSize: Float): Float {
-        return if (contentSize <= viewSize) 0f else delta
     }
 
     private fun fitToScreen() {
@@ -162,7 +172,7 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.postTranslate(redundantXSpace / 2, redundantYSpace / 2)
 
         imageMatrix = matrix_
-        fixTrans()
+
     }
 
     override fun setImageDrawable(drawable: Drawable?) {
@@ -184,35 +194,43 @@ class ZoomableImageView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         mScaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
+
         val curr = PointF(event.x, event.y)
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                parent.requestDisallowInterceptTouchEvent(true)
+
+                mode = DRAG
                 last.set(curr)
                 start.set(last)
-                mode = DRAG
+                parent.requestDisallowInterceptTouchEvent(true)
             }
+
             MotionEvent.ACTION_MOVE -> {
                 if (mode == DRAG) {
-                    parent.requestDisallowInterceptTouchEvent(isZoomed)
                     val deltaX = curr.x - last.x
                     val deltaY = curr.y - last.y
-                    val fixTransX = getFixDragTrans(deltaX, viewWidth.toFloat(), origWidth * saveScale)
-                    val fixTransY = getFixDragTrans(deltaY, viewHeight.toFloat(), origHeight * saveScale)
-                    matrix_.postTranslate(fixTransX, fixTransY)
+                    matrix_.postTranslate(deltaX, deltaY)
                     fixTrans()
                     last.set(curr.x, curr.y)
                 }
+                parent.requestDisallowInterceptTouchEvent(isZoomed || mode == ZOOM)
             }
+
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                mode = NONE
                 parent.requestDisallowInterceptTouchEvent(false)
-                mode = NONE
             }
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                mode = ZOOM
+            }
+
             MotionEvent.ACTION_POINTER_UP -> {
-                mode = NONE
+                mode = DRAG
             }
         }
+
         imageMatrix = matrix_
         invalidate()
         return true
