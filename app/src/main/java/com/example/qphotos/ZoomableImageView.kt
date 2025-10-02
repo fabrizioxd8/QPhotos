@@ -83,12 +83,21 @@ class ZoomableImageView @JvmOverloads constructor(
     }
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            // We consume the event and do nothing, to prevent the default behavior
+            return true
+        }
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (isZoomed) {
                 animateZoom(minScale, e.x, e.y)
             } else {
                 animateZoom(minScale * 2.5f, e.x, e.y)
             }
+            return true
+        }
+
+        override fun onDoubleTapEvent(e: MotionEvent): Boolean {
+            // Consume the event to prevent drag mode from being activated, which causes a jump
             return true
         }
     }
