@@ -8,9 +8,6 @@ interface UploadTaskDao {
     @Insert
     suspend fun insert(task: UploadTask)
 
-    @androidx.room.Update
-    suspend fun update(task: UploadTask)
-
     @Delete
     suspend fun delete(task: UploadTask)
 
