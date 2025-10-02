@@ -11,7 +11,9 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.widget.AppCompatImageView
+
 import kotlin.math.abs
+
 
 class ZoomableImageView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -37,7 +39,9 @@ class ZoomableImageView @JvmOverloads constructor(
     private var currentAnimator: ValueAnimator? = null
 
     private val isZoomed: Boolean
+
         get() = saveScale > minScale + 0.01f
+
 
     init {
         super.setClickable(true)
@@ -57,10 +61,12 @@ class ZoomableImageView @JvmOverloads constructor(
     private fun animateZoom(targetScale: Float, focusX: Float, focusY: Float) {
         currentAnimator?.cancel()
 
+
         val startScale = saveScale
         val endScale = targetScale.coerceIn(minScale, maxScale)
 
         currentAnimator = ValueAnimator.ofFloat(startScale, endScale).apply {
+
             interpolator = AccelerateDecelerateInterpolator()
             duration = 300
             addUpdateListener { animation ->
@@ -106,7 +112,9 @@ class ZoomableImageView @JvmOverloads constructor(
                 mScaleFactor = minScale / origScale
             }
 
+
             matrix_.postScale(mScaleFactor, mScaleFactor, detector.focusX, detector.focusY)
+
             fixTrans()
             return true
         }
@@ -116,6 +124,7 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.getValues(m)
         val transX = m[Matrix.MTRANS_X]
         val transY = m[Matrix.MTRANS_Y]
+
 
         val contentWidth = origWidth * saveScale
         val contentHeight = origHeight * saveScale
@@ -137,6 +146,7 @@ class ZoomableImageView @JvmOverloads constructor(
         if (fixTransX != 0f || fixTransY != 0f) {
             matrix_.postTranslate(fixTransX, fixTransY)
         }
+
     }
 
     private fun fitToScreen() {
@@ -162,6 +172,7 @@ class ZoomableImageView @JvmOverloads constructor(
         matrix_.postTranslate(redundantXSpace / 2, redundantYSpace / 2)
 
         imageMatrix = matrix_
+
     }
 
     override fun setImageDrawable(drawable: Drawable?) {
@@ -188,6 +199,7 @@ class ZoomableImageView @JvmOverloads constructor(
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+
                 mode = DRAG
                 last.set(curr)
                 start.set(last)
