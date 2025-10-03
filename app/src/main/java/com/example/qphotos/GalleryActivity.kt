@@ -14,6 +14,8 @@ import com.stfalcon.imageviewer.loader.ImageLoader
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
+import android.widget.ImageView
+import coil.load
 
 class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
@@ -35,6 +37,17 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
         setupRecyclerView()
         fetchPhotos(monthFolder, projectName)
+
+        deleteButton.setOnClickListener {
+            deleteSelectedPhotos()
+        }
+    }
+
+    override fun loadImage(imageView: ImageView, imageUrl: String) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null)
+        val fullUrl = "http://$ip:5000/uploads/$imageUrl"
+        imageView.load(fullUrl)
     }
 
     override fun loadImage(imageView: ImageView, imageUrl: String) {
