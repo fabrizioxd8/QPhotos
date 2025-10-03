@@ -218,7 +218,6 @@ class ZoomableImageView @JvmOverloads constructor(
                 mode = DRAG
                 last.set(curr)
                 start.set(last)
-                parent.requestDisallowInterceptTouchEvent(true)
             }
 
             MotionEvent.ACTION_MOVE -> {
