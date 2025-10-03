@@ -98,8 +98,8 @@ class ZoomableImageView @JvmOverloads constructor(
         }
 
         override fun onDoubleTapEvent(e: MotionEvent): Boolean {
-            // Consume the event to prevent drag mode from being activated, which causes a jump
-            return true
+            // Let the superclass handle the event to ensure proper state management.
+            return super.onDoubleTapEvent(e)
         }
     }
 
