@@ -64,7 +64,10 @@ class ProjectRepository(private val context: Context) {
                     val jsonArray = JSONArray(response.body!!.string())
                     for (i in 0 until jsonArray.length()) {
                         val jsonObject = jsonArray.getJSONObject(i)
-                        items.add(FileSystemItem(jsonObject.getString("name"), jsonObject.getString("type")))
+                        val name = jsonObject.getString("name")
+                        val type = jsonObject.getString("type")
+                        val fullPath = if (path.isEmpty()) name else "$path/$name"
+                        items.add(FileSystemItem(name, type, fullPath))
                     }
                     callback.onSuccess(items)
                 } else {
