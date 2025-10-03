@@ -66,7 +66,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.coil.kt)
     implementation(libs.androidx.work.runtime.ktx)
-    implementation("com.github.stfalcon-studio:StfalconImageViewer:v1.0.1")
+    implementation("com.github.stfalcon-studio:StfalconImageViewer:1.0.1")
 }
 room {
     schemaDirectory("$projectDir/schemas")

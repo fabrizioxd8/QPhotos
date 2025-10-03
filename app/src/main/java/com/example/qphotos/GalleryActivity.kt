@@ -63,13 +63,25 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
             }
         )
         photosRecyclerView.adapter = galleryAdapter
-        val layoutManager = GridLayoutManager(this, 3)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return when (galleryAdapter.getItemViewType(position)) {
-                    0 -> 3 // Date Header
-                    1 -> 1 // Photo Item
-                    else -> 1
+        photosRecyclerView.layoutManager = GridLayoutManager(this, 3)
+    }
+
+    private fun showPhotoViewer(startPosition: Int) {
+        val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
+        val deleteButton = overlayView.findViewById<ImageButton>(R.id.deleteButton)
+
+        // Set the initial listener for the first image shown
+        deleteButton.setOnClickListener {
+            showDeleteConfirmationDialog(photoUrls[startPosition])
+        }
+
+        viewer = StfalconImageViewer.Builder(this, photoUrls, this)
+            .withStartPosition(startPosition)
+            .withOverlayView(overlayView)
+            .withImageChangeListener { position ->
+                // Update the listener for subsequent images
+                deleteButton.setOnClickListener {
+                    showDeleteConfirmationDialog(photoUrls[position])
                 }
             }
         }
