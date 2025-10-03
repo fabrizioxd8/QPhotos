@@ -3,18 +3,17 @@ package com.example.qphotos
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class ProjectsAdapter(
-    private var items: List<FileSystemItem>,
-    private val onItemClicked: (FileSystemItem) -> Unit
+    private var projects: List<Project>,
+    private val onItemClicked: (Project) -> Unit,
+    private val onItemLongClicked: (Project) -> Unit
 ) : RecyclerView.Adapter<ProjectsAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val itemName: TextView = view.findViewById(R.id.tvProjectName)
-        val itemIcon: ImageView = view.findViewById(R.id.itemIcon)
+        val projectName: TextView = view.findViewById(R.id.tvProjectName)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -24,24 +23,22 @@ class ProjectsAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = items[position]
-        holder.itemName.text = item.name
-
-        if (item.type == "folder") {
-            holder.itemIcon.setImageResource(R.drawable.ic_folder)
-        } else {
-            holder.itemIcon.setImageResource(R.drawable.ic_gallery) // Using gallery icon for photo collections
-        }
+        val project = projects[position]
+        holder.projectName.text = project.name
 
         holder.itemView.setOnClickListener {
-            onItemClicked(item)
+            onItemClicked(project)
+        }
+        holder.itemView.setOnLongClickListener {
+            onItemLongClicked(project)
+            true
         }
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount() = projects.size
 
-    fun updateItems(newItems: List<FileSystemItem>) {
-        items = newItems
+    fun updateProjects(newProjects: List<Project>) {
+        projects = newProjects
         notifyDataSetChanged()
     }
 }

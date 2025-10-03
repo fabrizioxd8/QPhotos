@@ -66,10 +66,16 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
         val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
         val deleteButtonInOverlay = overlayView.findViewById<ImageButton>(R.id.deleteButton)
 
+        // Set the initial listener for the first image shown
+        deleteButtonInOverlay.setOnClickListener {
+            showDeleteConfirmationDialog(photoUrls[startPosition])
+        }
+
         viewer = StfalconImageViewer.Builder(this, photoUrls, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->
+                // Update the listener to point to the currently visible photo
                 deleteButtonInOverlay.setOnClickListener {
                     showDeleteConfirmationDialog(photoUrls[position])
                 }
@@ -137,6 +143,9 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
                         Toast.makeText(applicationContext, "Photo deleted.", Toast.LENGTH_SHORT).show()
                         galleryAdapter.removePhoto(photoUrl)
                         viewer?.dismiss()
+                        if (galleryItems.none { it is GalleryItem.PhotoItem }) {
+                            finish()
+                        }
                     } else {
                         Toast.makeText(applicationContext, "Error: ${response.message}", Toast.LENGTH_LONG).show()
                     }
