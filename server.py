@@ -185,7 +185,7 @@ def list_photos(month, project):
             photos_path = os.path.join(project_dir, date_folder)
             photos = [f for f in os.listdir(photos_path) if f.endswith('.jpg')]
             for photo in sorted(photos, reverse=True):
-                url = f"{month}/{project}/{date_folder}/{photo}"
+                url = f"uploads/{month}/{project}/{date_folder}/{photo}"
                 date_photo_urls.append(url)
             if date_photo_urls:
                 photos_by_date[date_folder] = date_photo_urls
@@ -234,25 +234,6 @@ def delete_photo(filepath):
     except Exception as e:
         print(f"Error deleting photo {filepath}: {e}")
         return jsonify({"error": "Could not delete photo"}), 500
-
-@app.route('/browse', defaults={'path': ''})
-@app.route('/browse/<path:path>')
-def browse(path):
-    base_dir = UPLOAD_FOLDER
-    browse_path = os.path.join(base_dir, path)
-
-    if not os.path.exists(browse_path) or not os.path.isdir(browse_path):
-        return jsonify({"error": "Directory not found"}), 404
-
-    items = []
-    for item in os.listdir(browse_path):
-        item_path = os.path.join(browse_path, item)
-        if os.path.isdir(item_path):
-            items.append({"name": item, "type": "folder"})
-        else:
-            items.append({"name": item, "type": "file"})
-
-    return jsonify(items)
 
 if __name__ == '__main__':
     from waitress import serve
