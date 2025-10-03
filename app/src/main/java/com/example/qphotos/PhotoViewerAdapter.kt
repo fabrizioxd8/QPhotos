@@ -5,14 +5,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import com.github.chrisbanes.photoview.PhotoView
 
 class PhotoViewerAdapter(private val photoUrls: List<String>, private val baseUrl: String) :
     RecyclerView.Adapter<PhotoViewerAdapter.PhotoViewHolder>() {
 
     class PhotoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-
-        val imageView: ZoomableImageView = view.findViewById(R.id.imageView)
-
+        val photoView: PhotoView = view.findViewById(R.id.photoView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
@@ -24,19 +23,12 @@ class PhotoViewerAdapter(private val photoUrls: List<String>, private val baseUr
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
         val fullUrl = "$baseUrl/uploads/${photoUrls[position]}"
 
+        // Reset scale on image bind to ensure no leftover zoom
+        holder.photoView.setScale(1f, false)
 
-        // Reset zoom before loading a new image to handle view recycling correctly.
-        holder.imageView.resetZoom()
-
-        holder.imageView.load(fullUrl) {
+        holder.photoView.load(fullUrl) {
             placeholder(R.drawable.ic_gallery)
             error(R.drawable.ic_folder)
-            // It's good practice to also reset on success in case of complex lifecycle events,
-            // though the initial reset handles most cases.
-            listener(
-                onSuccess = { _, _ -> holder.imageView.resetZoom() }
-            )
-
         }
     }
 

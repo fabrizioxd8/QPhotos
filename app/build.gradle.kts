@@ -29,12 +29,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
     packaging {
@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.coil.kt)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation("com.github.chrisbanes:PhotoView:2.3.0")
 }
 room {
     schemaDirectory("$projectDir/schemas")
