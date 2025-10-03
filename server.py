@@ -170,16 +170,20 @@ def list_projects():
 
 @app.route('/photos/<month>/<project>', methods=['GET'])
 def list_photos(month, project):
-    photo_urls = []
+    photos_by_date = {}
     try:
         project_dir = os.path.join(UPLOAD_FOLDER, month, project)
         date_folders = [d for d in os.listdir(project_dir) if os.path.isdir(os.path.join(project_dir, d))]
         for date_folder in sorted(date_folders, reverse=True):
-            photos = [f for f in os.listdir(os.path.join(project_dir, date_folder)) if f.endswith('.jpg')]
+            date_photo_urls = []
+            photos_path = os.path.join(project_dir, date_folder)
+            photos = [f for f in os.listdir(photos_path) if f.endswith('.jpg')]
             for photo in sorted(photos, reverse=True):
                 url = f"{month}/{project}/{date_folder}/{photo}"
-                photo_urls.append(url)
-        return jsonify(photo_urls)
+                date_photo_urls.append(url)
+            if date_photo_urls:
+                photos_by_date[date_folder] = date_photo_urls
+        return jsonify(photos_by_date)
     except Exception as e:
         print(f"Error listing photos for project {project}: {e}")
         return jsonify({"error": "Could not list photos"}), 500

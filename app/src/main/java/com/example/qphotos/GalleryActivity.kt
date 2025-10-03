@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.stfalcon.imageviewer.StfalconImageViewer
 import com.stfalcon.imageviewer.loader.ImageLoader
 import okhttp3.*
-import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 import android.widget.ImageView
 import coil.load
@@ -22,7 +22,7 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
     private lateinit var galleryAdapter: GalleryAdapter
     private lateinit var deleteButtonContainer: LinearLayout
     private val client = OkHttpClient()
-    private var photoUrls = mutableListOf<String>()
+    private var galleryItems = mutableListOf<GalleryItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +37,6 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
         val deleteButton: Button = findViewById(R.id.deleteButton)
 
         setupRecyclerView()
-
         fetchPhotos(monthFolder, projectName)
 
         deleteButton.setOnClickListener {
@@ -53,10 +52,10 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
     }
 
     private fun setupRecyclerView() {
-        galleryAdapter = GalleryAdapter(photoUrls,
-            onPhotoClick = { position ->
+        galleryAdapter = GalleryAdapter(galleryItems,
+            onPhotoClick = { photoUrls, startPosition ->
                 StfalconImageViewer.Builder(this, photoUrls, this)
-                    .withStartPosition(position)
+                    .withStartPosition(startPosition)
                     .show()
             },
             onSelectionChange = { isInSelectionMode ->
@@ -64,7 +63,17 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
             }
         )
         photosRecyclerView.adapter = galleryAdapter
-        photosRecyclerView.layoutManager = GridLayoutManager(this, 3)
+        val layoutManager = GridLayoutManager(this, 3)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                return when (galleryAdapter.getItemViewType(position)) {
+                    0 -> 3 // Date Header
+                    1 -> 1 // Photo Item
+                    else -> 1
+                }
+            }
+        }
+        photosRecyclerView.layoutManager = layoutManager
     }
 
     private fun fetchPhotos(monthFolder: String, projectName: String) {
@@ -81,11 +90,18 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string()
-                    val jsonArray = JSONArray(responseBody)
-                    for (i in 0 until jsonArray.length()) {
-                        photoUrls.add(jsonArray.getString(i))
+                    val jsonObject = JSONObject(responseBody)
+                    val newGalleryItems = mutableListOf<GalleryItem>()
+                    jsonObject.keys().forEach { date ->
+                        newGalleryItems.add(GalleryItem.DateHeader(date))
+                        val photoArray = jsonObject.getJSONArray(date)
+                        for (i in 0 until photoArray.length()) {
+                            newGalleryItems.add(GalleryItem.PhotoItem(photoArray.getString(i)))
+                        }
                     }
                     runOnUiThread {
+                        galleryItems.clear()
+                        galleryItems.addAll(newGalleryItems)
                         galleryAdapter.notifyDataSetChanged()
                     }
                 }
@@ -109,11 +125,11 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    // Handle failure for individual photo deletion
+                    // Optionally handle failure for individual photo deletion
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    // Handle successful deletion
+                    // Optionally handle successful deletion
                 }
             })
         }
