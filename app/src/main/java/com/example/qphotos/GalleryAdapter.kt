@@ -1,61 +1,89 @@
 package com.example.qphotos
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 
-class GalleryAdapter() : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
+class GalleryAdapter(
+    private var galleryItems: MutableList<GalleryItem>,
+    private val onPhotoClick: (List<String>, Int) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private var photoUrls: List<String> = emptyList()
-    private var baseUrl: String = ""
-    private val TAG = "GalleryDebug"
-
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val imageView: ImageView = view.findViewById(R.id.ivPhoto)
+    companion object {
+        private const val TYPE_DATE_HEADER = 0
+        private const val TYPE_PHOTO_ITEM = 1
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.gallery_item_layout, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val thumbnailUrl = "$baseUrl/thumbnail/${photoUrls[position]}"
-        Log.d(TAG, "Binding view for position: $position, URL: $thumbnailUrl")
-
-        holder.imageView.load(thumbnailUrl) {
-            crossfade(true)
-            placeholder(android.R.drawable.ic_menu_gallery)
-            error(android.R.drawable.ic_delete)
-            listener(
-                onError = { _, result ->
-                    Log.e(TAG, "Coil error loading image: ${result.throwable}")
-                }
-            )
+    override fun getItemViewType(position: Int): Int {
+        return when (galleryItems[position]) {
+            is GalleryItem.DateHeader -> TYPE_DATE_HEADER
+            is GalleryItem.PhotoItem -> TYPE_PHOTO_ITEM
         }
+    }
 
-        holder.itemView.setOnClickListener {
-            val context = holder.itemView.context
-            val intent = android.content.Intent(context, PhotoViewerActivity::class.java).apply {
-                putStringArrayListExtra("PHOTO_URLS", ArrayList(photoUrls))
-                putExtra("CURRENT_POSITION", position)
-                putExtra("BASE_URL", baseUrl)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return when (viewType) {
+            TYPE_DATE_HEADER -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.gallery_date_header_layout, parent, false)
+                DateHeaderViewHolder(view)
             }
-            context.startActivity(intent)
+            TYPE_PHOTO_ITEM -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.gallery_item_layout, parent, false)
+                PhotoViewHolder(view)
+            }
+            else -> throw IllegalArgumentException("Invalid view type")
         }
     }
 
-    override fun getItemCount() = photoUrls.size
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = galleryItems[position]) {
+            is GalleryItem.DateHeader -> (holder as DateHeaderViewHolder).bind(item)
+            is GalleryItem.PhotoItem -> {
+                (holder as PhotoViewHolder).bind(item.photoUrl)
+                holder.itemView.setOnClickListener {
+                    val photoUrls = galleryItems.filterIsInstance<GalleryItem.PhotoItem>().map { it.photoUrl }
+                    val photoIndex = photoUrls.indexOf(item.photoUrl)
+                    onPhotoClick(photoUrls, photoIndex)
+                }
+            }
+        }
+    }
 
-    fun updatePhotos(newUrls: List<String>, newBaseUrl: String) {
-        Log.d(TAG, "GalleryAdapter is updating with ${newUrls.size} photos.")
-        this.photoUrls = newUrls
-        this.baseUrl = newBaseUrl
+    override fun getItemCount(): Int = galleryItems.size
+
+    fun updateItems(newItems: List<GalleryItem>) {
+        galleryItems.clear()
+        galleryItems.addAll(newItems)
         notifyDataSetChanged()
+    }
+
+    fun removePhoto(photoUrl: String) {
+        val index = galleryItems.indexOfFirst { it is GalleryItem.PhotoItem && it.photoUrl == photoUrl }
+        if (index != -1) {
+            galleryItems.removeAt(index)
+            notifyItemRemoved(index)
+        }
+    }
+
+    class DateHeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val dateTextView: TextView = itemView.findViewById(R.id.dateTextView)
+        fun bind(header: GalleryItem.DateHeader) {
+            dateTextView.text = header.date
+        }
+    }
+
+    class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val imageView: ImageView = itemView.findViewById(R.id.photoImageView)
+
+        fun bind(photoUrl: String) {
+            val prefs = itemView.context.getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+            val ip = prefs.getString("server_ip", null)
+            val fullUrl = "http://$ip:5000/thumbnail/$photoUrl"
+            imageView.load(fullUrl)
+        }
     }
 }
