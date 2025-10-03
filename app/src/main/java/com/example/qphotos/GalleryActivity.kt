@@ -55,11 +55,19 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
     private fun showPhotoViewer(startPosition: Int) {
         val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
+        val deleteButton = overlayView.findViewById<ImageButton>(R.id.deleteButton)
+
+        // Set the initial listener for the first image shown
+        deleteButton.setOnClickListener {
+            showDeleteConfirmationDialog(photoUrls[startPosition])
+        }
+
         viewer = StfalconImageViewer.Builder(this, photoUrls, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->
-                overlayView.findViewById<ImageButton>(R.id.deleteButton).setOnClickListener {
+                // Update the listener for subsequent images
+                deleteButton.setOnClickListener {
                     showDeleteConfirmationDialog(photoUrls[position])
                 }
             }
