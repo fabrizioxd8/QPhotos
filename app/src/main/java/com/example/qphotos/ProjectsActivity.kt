@@ -1,7 +1,6 @@
 package com.example.qphotos
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.TextView
@@ -17,6 +16,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+
 
 class ProjectsActivity : AppCompatActivity() {
 
