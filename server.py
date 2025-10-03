@@ -219,6 +219,25 @@ def serve_thumbnail(filepath):
         print(f"Error creating thumbnail for {filepath}: {e}")
         return "Error", 500
 
+@app.route('/browse', defaults={'path': ''})
+@app.route('/browse/<path:path>')
+def browse(path):
+    base_dir = UPLOAD_FOLDER
+    browse_path = os.path.join(base_dir, path)
+
+    if not os.path.exists(browse_path) or not os.path.isdir(browse_path):
+        return jsonify({"error": "Directory not found"}), 404
+
+    items = []
+    for item in os.listdir(browse_path):
+        item_path = os.path.join(browse_path, item)
+        if os.path.isdir(item_path):
+            items.append({"name": item, "type": "folder"})
+        else:
+            items.append({"name": item, "type": "file"})
+
+    return jsonify(items)
+
 @app.route('/photo/<path:filepath>', methods=['DELETE'])
 def delete_photo(filepath):
     try:

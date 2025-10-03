@@ -10,14 +10,12 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.stfalcon.imageviewer.StfalconImageViewer
-import com.stfalcon.imageviewer.loader.ImageLoader
+import com.stfalcon.imageviewer.loader.ImageLoader as StfalconImageLoader
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
-import android.widget.ImageView
-import coil.load
 
-class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
+class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
     private lateinit var photosRecyclerView: RecyclerView
     private lateinit var galleryAdapter: GalleryAdapter
@@ -37,17 +35,6 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
         setupRecyclerView()
         fetchPhotos(monthFolder, projectName)
-
-        deleteButton.setOnClickListener {
-            deleteSelectedPhotos()
-        }
-    }
-
-    override fun loadImage(imageView: ImageView, imageUrl: String) {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val ip = prefs.getString("server_ip", null)
-        val fullUrl = "http://$ip:5000/uploads/$imageUrl"
-        imageView.load(fullUrl)
     }
 
     override fun loadImage(imageView: ImageView, imageUrl: String) {
@@ -77,19 +64,13 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
     private fun showPhotoViewer(photoUrls: List<String>, startPosition: Int) {
         val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
-        val deleteButton = overlayView.findViewById<ImageButton>(R.id.deleteButton)
-
-        // Set the initial listener for the first image shown
-        deleteButton.setOnClickListener {
-            showDeleteConfirmationDialog(photoUrls[startPosition])
-        }
+        val deleteButtonInOverlay = overlayView.findViewById<ImageButton>(R.id.deleteButton)
 
         viewer = StfalconImageViewer.Builder(this, photoUrls, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->
-                // Update the listener for subsequent images
-                deleteButton.setOnClickListener {
+                deleteButtonInOverlay.setOnClickListener {
                     showDeleteConfirmationDialog(photoUrls[position])
                 }
             }
@@ -109,7 +90,7 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
+                    val responseBody = response.body?.string() ?: return
                     val jsonObject = JSONObject(responseBody)
                     val newGalleryItems = mutableListOf<GalleryItem>()
                     jsonObject.keys().forEach { date ->
@@ -130,7 +111,7 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
     private fun showDeleteConfirmationDialog(photoUrl: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Delete Photo")
-            .setMessage("Are you sure you want to delete this photo? This action cannot be undone.")
+            .setMessage("Are you sure you want to delete this photo?")
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
                 deletePhoto(photoUrl)
@@ -147,9 +128,7 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    Toast.makeText(applicationContext, "Failed to delete photo. Please try again.", Toast.LENGTH_LONG).show()
-                }
+                runOnUiThread { Toast.makeText(applicationContext, "Failed to delete photo.", Toast.LENGTH_LONG).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -158,7 +137,6 @@ class GalleryActivity : AppCompatActivity(), ImageLoader<String> {
                         Toast.makeText(applicationContext, "Photo deleted.", Toast.LENGTH_SHORT).show()
                         galleryAdapter.removePhoto(photoUrl)
                         viewer?.dismiss()
-
                     } else {
                         Toast.makeText(applicationContext, "Error: ${response.message}", Toast.LENGTH_LONG).show()
                     }
