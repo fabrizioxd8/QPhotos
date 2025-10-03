@@ -209,6 +209,22 @@ def serve_thumbnail(filepath):
         print(f"Error creating thumbnail for {filepath}: {e}")
         return "Error", 500
 
+@app.route('/photo/<path:filepath>', methods=['DELETE'])
+def delete_photo(filepath):
+    try:
+        photo_path = os.path.join(UPLOAD_FOLDER, filepath)
+
+        if not os.path.exists(photo_path):
+            return jsonify({"error": "Photo not found"}), 404
+
+        os.remove(photo_path)
+        print(f"Successfully deleted photo: {photo_path}")
+        return jsonify({"success": f"Photo '{filepath}' deleted."}), 200
+
+    except Exception as e:
+        print(f"Error deleting photo {filepath}: {e}")
+        return jsonify({"error": "Could not delete photo"}), 500
+
 if __name__ == '__main__':
     from waitress import serve
     print("Servidor de producción iniciado en http://0.0.0.0:5000")
