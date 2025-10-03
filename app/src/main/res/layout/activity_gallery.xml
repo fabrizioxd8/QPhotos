@@ -9,7 +9,25 @@
         android:id="@+id/photosRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@+id/deleteButtonContainer"
         android:padding="1dp"
         android:clipToPadding="false"/>
+
+    <LinearLayout
+        android:id="@+id/deleteButtonContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:visibility="gone"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="?android:attr/windowBackground">
+
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Delete Selected Photos" />
+    </LinearLayout>
 
 </RelativeLayout>

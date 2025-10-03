@@ -158,12 +158,9 @@ def get_last_project():
 def list_projects():
     projects_data = []
     try:
-        upload_path = UPLOAD_FOLDER
-        month_folders = [d for d in os.listdir(upload_path) if os.path.isdir(os.path.join(upload_path, d))]
-
+        month_folders = [d for d in os.listdir(UPLOAD_FOLDER) if os.path.isdir(os.path.join(UPLOAD_FOLDER, d))]
         for month in month_folders:
-            month_path = os.path.join(upload_path, month)
-            project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
+            project_folders = [p for p in os.listdir(os.path.join(UPLOAD_FOLDER, month)) if os.path.isdir(os.path.join(UPLOAD_FOLDER, month, p))]
             for project in project_folders:
                 projects_data.append({"month": month, "name": project})
         return jsonify(projects_data)
