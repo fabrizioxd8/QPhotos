@@ -1,9 +1,9 @@
 package com.example.qphotos
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -17,8 +17,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import com.stfalcon.imageviewer.StfalconImageViewer
+import com.stfalcon.imageviewer.loader.ImageLoader
+import android.widget.ImageView
+import coil.load
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-class ProjectsActivity : AppCompatActivity() {
+
+class ProjectsActivity : AppCompatActivity(), ImageLoader<String> {
 
     private val client = OkHttpClient()
     private lateinit var projectsAdapter: ProjectsAdapter
@@ -30,6 +36,13 @@ class ProjectsActivity : AppCompatActivity() {
         title = "Proyectos Subidos"
         setupRecyclerView()
         fetchProjects()
+    }
+
+    override fun loadImage(imageView: ImageView, imageUrl: String) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null)
+        val fullUrl = "http://$ip:5000/uploads/$imageUrl"
+        imageView.load(fullUrl)
     }
 
     private fun setupRecyclerView() {
@@ -44,11 +57,7 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun onProjectClicked(project: Project) {
-        val intent = Intent(this, GalleryActivity::class.java).apply {
-            putExtra("PROJECT_NAME", project.name)
-            putExtra("MONTH_FOLDER", project.month)
-        }
-        startActivity(intent)
+        fetchPhotosForProject(project)
     }
 
     private fun showOptionsDialog(project: Project) {
@@ -193,6 +202,88 @@ class ProjectsActivity : AppCompatActivity() {
                     }
                 } else {
                     runOnUiThread { Toast.makeText(applicationContext, "Error del servidor al borrar", Toast.LENGTH_SHORT).show() }
+                }
+            }
+        })
+    }
+
+    private fun fetchPhotosForProject(project: Project) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        val url = "http://$ip:5000/photos/${project.month}/${project.name}"
+        val request = Request.Builder().url(url).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { Toast.makeText(applicationContext, "Failed to fetch photos.", Toast.LENGTH_SHORT).show() }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    val photoUrls = mutableListOf<String>()
+                    val jsonArray = JSONArray(response.body!!.string())
+                    for (i in 0 until jsonArray.length()) {
+                        photoUrls.add(jsonArray.getString(i))
+                    }
+                    runOnUiThread {
+                        if (photoUrls.isNotEmpty()) {
+                            showPhotoViewer(photoUrls)
+                        } else {
+                            Toast.makeText(applicationContext, "No photos in this project.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    private fun showPhotoViewer(photoUrls: MutableList<String>) {
+        val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
+        val viewer = StfalconImageViewer.Builder(this, photoUrls, this)
+            .withOverlayView(overlayView)
+            .withImageChangeListener { position ->
+                overlayView.findViewById<ImageButton>(R.id.deleteButton).setOnClickListener {
+                    showDeleteConfirmationDialog(photoUrls[position]) {
+                        // This block will be executed if the user confirms deletion.
+                        // viewer.dismiss() is not available here, so we need a different approach.
+                        // For now, we'll just delete the photo and the user can manually close.
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun showDeleteConfirmationDialog(photoUrl: String, onConfirmed: () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Delete Photo")
+            .setMessage("Are you sure you want to delete this photo? This action cannot be undone.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete") { _, _ ->
+                deletePhoto(photoUrl, onConfirmed)
+            }
+            .show()
+    }
+
+    private fun deletePhoto(photoUrl: String, onConfirmed: () -> Unit) {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val ip = prefs.getString("server_ip", null) ?: return
+        // The photoUrl is the filepath, e.g., "01 ENERO/Project Alpha/2023-10-27/uuid.jpg"
+        val url = "http://$ip:5000/photo/$photoUrl"
+        val request = Request.Builder().url(url).delete().build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { Toast.makeText(applicationContext, "Failed to delete photo.", Toast.LENGTH_SHORT).show() }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    runOnUiThread {
+                        Toast.makeText(applicationContext, "Photo deleted.", Toast.LENGTH_SHORT).show()
+                        onConfirmed() // This might be used to refresh the view
+                    }
+                } else {
+                    runOnUiThread { Toast.makeText(applicationContext, "Server error while deleting photo.", Toast.LENGTH_SHORT).show() }
                 }
             }
         })

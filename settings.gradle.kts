@@ -12,6 +12,7 @@ dependencyResolutionManagement {
     repositories {
         google()       // <-- This line is essential
         mavenCentral() // <-- This line is essential
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
