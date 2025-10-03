@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_margin="1dp">
 
     <ImageView
-        android:id="@+id/ivPhoto"
+        android:id="@+id/photoImageView"
         android:layout_width="match_parent"
         android:layout_height="120dp"
         android:scaleType="centerCrop"
-        android:background="?attr/selectableItemBackground"
-        android:contentDescription="Foto del proyecto" />
+        android:background="@color/black"
+        android:importantForAccessibility="no" />
+
+    <View
+        android:id="@+id/selectionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone" />
 
 </FrameLayout>

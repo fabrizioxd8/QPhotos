@@ -158,9 +158,15 @@ def get_last_project():
 def list_projects():
     projects_data = []
     try:
-        month_folders = [d for d in os.listdir(UPLOAD_FOLDER) if os.path.isdir(os.path.join(UPLOAD_FOLDER, d))]
+        upload_path = UPLOAD_FOLDER
+        month_folders = [d for d in os.listdir(upload_path) if os.path.isdir(os.path.join(upload_path, d))]
+
+        # Sort month folders by modification time (newest first)
+        month_folders.sort(key=lambda d: os.path.getmtime(os.path.join(upload_path, d)), reverse=True)
+
         for month in month_folders:
-            project_folders = [p for p in os.listdir(os.path.join(UPLOAD_FOLDER, month)) if os.path.isdir(os.path.join(UPLOAD_FOLDER, month, p))]
+            month_path = os.path.join(upload_path, month)
+            project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
             for project in project_folders:
                 projects_data.append({"month": month, "name": project})
         return jsonify(projects_data)
@@ -170,16 +176,20 @@ def list_projects():
 
 @app.route('/photos/<month>/<project>', methods=['GET'])
 def list_photos(month, project):
-    photo_urls = []
+    photos_by_date = {}
     try:
         project_dir = os.path.join(UPLOAD_FOLDER, month, project)
         date_folders = [d for d in os.listdir(project_dir) if os.path.isdir(os.path.join(project_dir, d))]
         for date_folder in sorted(date_folders, reverse=True):
-            photos = [f for f in os.listdir(os.path.join(project_dir, date_folder)) if f.endswith('.jpg')]
+            date_photo_urls = []
+            photos_path = os.path.join(project_dir, date_folder)
+            photos = [f for f in os.listdir(photos_path) if f.endswith('.jpg')]
             for photo in sorted(photos, reverse=True):
                 url = f"{month}/{project}/{date_folder}/{photo}"
-                photo_urls.append(url)
-        return jsonify(photo_urls)
+                date_photo_urls.append(url)
+            if date_photo_urls:
+                photos_by_date[date_folder] = date_photo_urls
+        return jsonify(photos_by_date)
     except Exception as e:
         print(f"Error listing photos for project {project}: {e}")
         return jsonify({"error": "Could not list photos"}), 500
@@ -208,6 +218,41 @@ def serve_thumbnail(filepath):
     except Exception as e:
         print(f"Error creating thumbnail for {filepath}: {e}")
         return "Error", 500
+
+@app.route('/photo/<path:filepath>', methods=['DELETE'])
+def delete_photo(filepath):
+    try:
+        photo_path = os.path.join(UPLOAD_FOLDER, filepath)
+
+        if not os.path.exists(photo_path):
+            return jsonify({"error": "Photo not found"}), 404
+
+        os.remove(photo_path)
+        print(f"Successfully deleted photo: {photo_path}")
+        return jsonify({"success": f"Photo '{filepath}' deleted."}), 200
+
+    except Exception as e:
+        print(f"Error deleting photo {filepath}: {e}")
+        return jsonify({"error": "Could not delete photo"}), 500
+
+@app.route('/browse', defaults={'path': ''})
+@app.route('/browse/<path:path>')
+def browse(path):
+    base_dir = UPLOAD_FOLDER
+    browse_path = os.path.join(base_dir, path)
+
+    if not os.path.exists(browse_path) or not os.path.isdir(browse_path):
+        return jsonify({"error": "Directory not found"}), 404
+
+    items = []
+    for item in os.listdir(browse_path):
+        item_path = os.path.join(browse_path, item)
+        if os.path.isdir(item_path):
+            items.append({"name": item, "type": "folder"})
+        else:
+            items.append({"name": item, "type": "file"})
+
+    return jsonify(items)
 
 if __name__ == '__main__':
     from waitress import serve
