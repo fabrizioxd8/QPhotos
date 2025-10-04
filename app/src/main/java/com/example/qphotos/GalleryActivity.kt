@@ -57,10 +57,10 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
     }
 
     private fun showPhotoViewer(startPosition: Int) {
-        val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
+        val overlayView = layoutInflater.inflate(R.layout.photo_overlay, photosRecyclerView, false)
         val deleteButtonInOverlay = overlayView.findViewById<ImageButton>(R.id.deleteButton)
 
-        viewer = com.stfalcon.imageviewer.StfalconImageViewer.Builder(this, photoUrls, this)
+        viewer = StfalconImageViewer.Builder(this, photoUrls, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->
@@ -90,7 +90,7 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    val responseBody = response.body?.string() ?: return
+                    val responseBody = response.body.string()
                     val newPhotoUrls = mutableListOf<String>()
                     val jsonArray = JSONArray(responseBody)
                     for (i in 0 until jsonArray.length()) {

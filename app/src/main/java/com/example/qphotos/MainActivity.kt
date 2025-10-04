@@ -114,7 +114,10 @@ class MainActivity : AppCompatActivity() {
         }
         settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         viewProjectsButton.setOnClickListener { startActivity(Intent(this, ProjectsActivity::class.java)) }
-        tvLastProject.setOnClickListener { actvNombreProyecto.setText(tvLastProject.text) }
+        tvLastProject.setOnClickListener {
+            actvNombreProyecto.setText(tvLastProject.text, false)
+            actvNombreProyecto.requestFocus()
+        }
         tvQueueCount.setOnClickListener { startActivity(Intent(this, QueueActivity::class.java)) }
 
         btnFlash.setOnClickListener {
@@ -330,7 +333,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    response.body?.let {
+                    response.body.let {
                         val responseBodyString = it.string()
                         val json = JSONObject(responseBodyString)
                         val lastProject = json.optString("last_project", "")
@@ -362,27 +365,25 @@ class MainActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    val responseBodyString = response.body?.string()
-                    if (responseBodyString != null) {
-                        try {
-                            val jsonArray = JSONArray(responseBodyString)
-                            val projectNames = mutableSetOf<String>()
-                            for (i in 0 until jsonArray.length()) {
-                                val project = jsonArray.getJSONObject(i)
-                                projectNames.add(project.getString("name"))
-                            }
-
-                            runOnUiThread {
-                                val adapter = ArrayAdapter(
-                                    this@MainActivity,
-                                    android.R.layout.simple_dropdown_item_1line,
-                                    projectNames.toList()
-                                )
-                                actvNombreProyecto.setAdapter(adapter)
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                    val responseBodyString = response.body.string()
+                    try {
+                        val jsonArray = JSONArray(responseBodyString)
+                        val projectNames = mutableSetOf<String>()
+                        for (i in 0 until jsonArray.length()) {
+                            val project = jsonArray.getJSONObject(i)
+                            projectNames.add(project.getString("name"))
                         }
+
+                        runOnUiThread {
+                            val adapter = ArrayAdapter(
+                                this@MainActivity,
+                                android.R.layout.simple_dropdown_item_1line,
+                                projectNames.toList()
+                            )
+                            actvNombreProyecto.setAdapter(adapter)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             }
