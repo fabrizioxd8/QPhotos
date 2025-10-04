@@ -159,19 +159,21 @@ def list_projects():
     projects_data = []
     try:
         upload_path = UPLOAD_FOLDER
-        month_folders = [d for d in os.listdir(upload_path) if os.path.isdir(os.path.join(upload_path, d))]
+        now = datetime.now()
+        month_num = now.month
+        month_name = MESES[month_num - 1]
+        current_month_folder = f"{month_num:02d} {month_name}"
 
-        # Sort month folders by modification time (newest first)
-        month_folders.sort(key=lambda d: os.path.getmtime(os.path.join(upload_path, d)), reverse=True)
+        month_path = os.path.join(upload_path, current_month_folder)
 
-        for month in month_folders:
-            month_path = os.path.join(upload_path, month)
+        if os.path.isdir(month_path):
             project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
             for project in project_folders:
-                projects_data.append({"month": month, "name": project})
+                projects_data.append({"month": current_month_folder, "name": project})
+
         return jsonify(projects_data)
     except Exception as e:
-        print(f"Error listing projects: {e}")
+        print(f"Error listing projects for current month: {e}")
         return jsonify({"error": "Could not list projects"}), 500
 
 @app.route('/photos/<month>/<project>', methods=['GET'])
