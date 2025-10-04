@@ -9,11 +9,11 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.github.stfalcon.stfalconimageviewer.StfalconImageViewer
-import com.github.stfalcon.stfalconimageviewer.loader.ImageLoader as StfalconImageLoader
+import com.stfalcon.imageviewer.StfalconImageViewer
+import com.stfalcon.imageviewer.loader.ImageLoader as StfalconImageLoader
 import okhttp3.*
-import org.json.JSONObject
 import java.io.IOException
+import org.json.JSONArray
 
 class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
@@ -60,7 +60,7 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
         val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
         val deleteButtonInOverlay = overlayView.findViewById<ImageButton>(R.id.deleteButton)
 
-        viewer = com.github.stfalcon.stfalconimageviewer.StfalconImageViewer.Builder(this, photoUrls, this)
+        viewer = com.stfalcon.imageviewer.StfalconImageViewer.Builder(this, photoUrls, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->

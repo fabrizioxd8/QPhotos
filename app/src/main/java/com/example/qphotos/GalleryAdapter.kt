@@ -38,7 +38,7 @@ class GalleryAdapter(
             val fullUrl = "http://$ip:5000/thumbnail/$photoUrl"
             imageView.load(fullUrl) {
                 crossfade(true)
-                placeholder(R.drawable.ic_placeholder) // Optional: add a placeholder drawable
+                placeholder(R.drawable.ic_folder) // Optional: add a placeholder drawable
             }
         }
     }
