@@ -9,8 +9,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.stfalcon.imageviewer.StfalconImageViewer
-import com.stfalcon.imageviewer.loader.ImageLoader as StfalconImageLoader
+import com.github.stfalcon.stfalconimageviewer.StfalconImageViewer
+import com.github.stfalcon.stfalconimageviewer.loader.ImageLoader as StfalconImageLoader
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -20,21 +20,25 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
     private lateinit var photosRecyclerView: RecyclerView
     private lateinit var galleryAdapter: GalleryAdapter
     private val client = OkHttpClient()
-    private var galleryItems = mutableListOf<GalleryItem>()
+    private var photoUrls = mutableListOf<String>()
     private var viewer: StfalconImageViewer<String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
 
-        val projectName = intent.getStringExtra("PROJECT_NAME") ?: "Default"
-        val monthFolder = intent.getStringExtra("MONTH_FOLDER") ?: "Default"
-        title = projectName
+        val dayPath = intent.getStringExtra("DAY_PATH")
+        if (dayPath == null) {
+            Toast.makeText(this, "Error: Missing day path", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        title = dayPath.split("/").lastOrNull() ?: "Gallery"
 
         photosRecyclerView = findViewById(R.id.photosRecyclerView)
 
         setupRecyclerView()
-        fetchPhotos(monthFolder, projectName)
+        fetchPhotos(dayPath)
     }
 
     override fun loadImage(imageView: ImageView, imageUrl: String) {
@@ -45,46 +49,38 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
     }
 
     private fun setupRecyclerView() {
-        galleryAdapter = GalleryAdapter(galleryItems) { photoUrls, startPosition ->
-            showPhotoViewer(photoUrls, startPosition)
+        galleryAdapter = GalleryAdapter(photoUrls) { startPosition ->
+            showPhotoViewer(startPosition)
         }
         photosRecyclerView.adapter = galleryAdapter
-        val layoutManager = GridLayoutManager(this, 3)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return when (galleryAdapter.getItemViewType(position)) {
-                    0 -> 3 // Date Header
-                    1 -> 1 // Photo Item
-                    else -> 1
-                }
-            }
-        }
-        photosRecyclerView.layoutManager = layoutManager
+        photosRecyclerView.layoutManager = GridLayoutManager(this, 3) // Simple grid
     }
 
-    private fun showPhotoViewer(photoUrls: List<String>, startPosition: Int) {
+    private fun showPhotoViewer(startPosition: Int) {
         val overlayView = layoutInflater.inflate(R.layout.photo_overlay, null)
         val deleteButtonInOverlay = overlayView.findViewById<ImageButton>(R.id.deleteButton)
 
-        deleteButtonInOverlay.setOnClickListener {
-            showDeleteConfirmationDialog(photoUrls[startPosition])
-        }
-
-        viewer = StfalconImageViewer.Builder(this, photoUrls, this)
+        viewer = com.github.stfalcon.stfalconimageviewer.StfalconImageViewer.Builder(this, photoUrls, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->
+                // Update the delete button listener when the image changes
                 deleteButtonInOverlay.setOnClickListener {
                     showDeleteConfirmationDialog(photoUrls[position])
                 }
             }
             .show()
+
+        // Initial setup for the delete button
+        deleteButtonInOverlay.setOnClickListener {
+            showDeleteConfirmationDialog(photoUrls[startPosition])
+        }
     }
 
-    private fun fetchPhotos(monthFolder: String, projectName: String) {
+    private fun fetchPhotos(dayPath: String) {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val ip = prefs.getString("server_ip", null) ?: return
-        val url = "http://$ip:5000/photos/$monthFolder/$projectName"
+        val url = "http://$ip:5000/list_photos_in_day/$dayPath"
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -95,17 +91,15 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string() ?: return
-                    val jsonObject = JSONObject(responseBody)
-                    val newGalleryItems = mutableListOf<GalleryItem>()
-                    jsonObject.keys().forEach { date ->
-                        newGalleryItems.add(GalleryItem.DateHeader(date))
-                        val photoArray = jsonObject.getJSONArray(date)
-                        for (i in 0 until photoArray.length()) {
-                            newGalleryItems.add(GalleryItem.PhotoItem(photoArray.getString(i)))
-                        }
+                    val newPhotoUrls = mutableListOf<String>()
+                    val jsonArray = JSONArray(responseBody)
+                    for (i in 0 until jsonArray.length()) {
+                        newPhotoUrls.add(jsonArray.getString(i))
                     }
                     runOnUiThread {
-                        galleryAdapter.updateItems(newGalleryItems)
+                        photoUrls.clear()
+                        photoUrls.addAll(newPhotoUrls)
+                        galleryAdapter.notifyDataSetChanged()
                     }
                 }
             }
@@ -124,10 +118,10 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
     }
 
 
-    private fun deletePhoto(photoUrl: String) {
+    private fun deletePhoto(photoUrlToDelete: String) {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val ip = prefs.getString("server_ip", null) ?: return
-        val url = "http://$ip:5000/photo/$photoUrl"
+        val url = "http://$ip:5000/photo/$photoUrlToDelete"
         val request = Request.Builder().url(url).delete().build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -139,7 +133,12 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
                 runOnUiThread {
                     if (response.isSuccessful) {
                         Toast.makeText(applicationContext, "Photo deleted.", Toast.LENGTH_SHORT).show()
-                        galleryAdapter.removePhoto(photoUrl)
+                        val indexToRemove = photoUrls.indexOf(photoUrlToDelete)
+                        if (indexToRemove != -1) {
+                            photoUrls.removeAt(indexToRemove)
+                            galleryAdapter.notifyItemRemoved(indexToRemove)
+                            galleryAdapter.notifyItemRangeChanged(indexToRemove, photoUrls.size)
+                        }
                         viewer?.dismiss()
                     } else {
                         Toast.makeText(applicationContext, "Error: ${response.message}", Toast.LENGTH_LONG).show()
