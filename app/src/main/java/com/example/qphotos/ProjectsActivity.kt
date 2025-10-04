@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -28,6 +29,17 @@ class ProjectsActivity : AppCompatActivity() {
 
         setupRecyclerView()
         loadContents(currentPath)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (currentPath.isNotEmpty()) {
+                    currentPath = File(currentPath).parent ?: ""
+                    loadContents(currentPath)
+                } else {
+                    finish()
+                }
+            }
+        })
     }
 
     private fun setupRecyclerView() {
@@ -40,9 +52,11 @@ class ProjectsActivity : AppCompatActivity() {
 
     private fun onItemClicked(item: FileSystemItem) {
         if (item.type == "folder") {
+            // If the item is a folder, navigate into it
             currentPath = item.path
             loadContents(currentPath)
         } else {
+            // This is a project folder, so open the gallery
             val pathParts = item.path.split("/")
             if (pathParts.size >= 2) {
                 val intent = Intent(this, GalleryActivity::class.java).apply {
@@ -75,14 +89,5 @@ class ProjectsActivity : AppCompatActivity() {
 
     private fun updateBreadcrumb() {
         breadcrumbTextView.text = if (currentPath.isEmpty()) "Home" else "Home / $currentPath"
-    }
-
-    override fun onBackPressed() {
-        if (currentPath.isNotEmpty()) {
-            currentPath = File(currentPath).parent ?: ""
-            loadContents(currentPath)
-        } else {
-            super.onBackPressed()
-        }
     }
 }
