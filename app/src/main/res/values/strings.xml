@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">QPhotos</string>
+    <string name="app_name" translatable="false">QPhotos</string>
     <string name="home">Home</string>
     <string name="home_breadcrumb">Home / %s</string>
     <string name="status_pending">Pending</string>
