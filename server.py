@@ -223,19 +223,22 @@ def serve_thumbnail(filepath):
 
 @app.route('/photo/<path:filepath>', methods=['DELETE'])
 def delete_photo(filepath):
-    try:
-        photo_path = os.path.join(UPLOAD_FOLDER, filepath)
+    with file_processing_lock:
+        try:
+            # We construct the full path relative to the script's location
+            photo_path = os.path.join(os.getcwd(), UPLOAD_FOLDER, filepath)
+            photo_path = os.path.normpath(photo_path) # Clean up the path
 
-        if not os.path.exists(photo_path):
-            return jsonify({"error": "Photo not found"}), 404
+            if not os.path.exists(photo_path):
+                return jsonify({"error": "Photo not found"}), 404
 
-        os.remove(photo_path)
-        print(f"Successfully deleted photo: {photo_path}")
-        return jsonify({"success": f"Photo '{filepath}' deleted."}), 200
+            os.remove(photo_path)
+            print(f"Successfully deleted photo: {photo_path}")
+            return jsonify({"success": f"Photo '{filepath}' deleted."}), 200
 
-    except Exception as e:
-        print(f"Error deleting photo {filepath}: {e}")
-        return jsonify({"error": "Could not delete photo"}), 500
+        except Exception as e:
+            print(f"Error deleting photo {filepath}: {e}")
+            return jsonify({"error": "Could not delete photo"}), 500
 
 if __name__ == '__main__':
     from waitress import serve
