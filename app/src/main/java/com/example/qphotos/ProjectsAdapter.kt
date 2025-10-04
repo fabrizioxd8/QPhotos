@@ -9,7 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ProjectsAdapter(
     private var items: List<FileSystemItem>,
-    private val onItemClicked: (FileSystemItem) -> Unit
+    private val onItemClicked: (FileSystemItem) -> Unit,
+    private val onItemLongClicked: (FileSystemItem) -> Unit
 ) : RecyclerView.Adapter<ProjectsAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -27,14 +28,25 @@ class ProjectsAdapter(
         val item = items[position]
         holder.itemName.text = item.name
 
-        if (item.type == "folder") {
-            holder.itemIcon.setImageResource(R.drawable.ic_folder)
-        } else {
-            holder.itemIcon.setImageResource(R.drawable.ic_gallery)
+        val iconRes = when (item.type) {
+            "month" -> R.drawable.ic_folder
+            "project" -> R.drawable.ic_folder
+            "day" -> R.drawable.ic_gallery
+            else -> R.drawable.ic_folder
         }
+        holder.itemIcon.setImageResource(iconRes)
 
         holder.itemView.setOnClickListener {
             onItemClicked(item)
+        }
+
+        if (item.type == "project") {
+            holder.itemView.setOnLongClickListener {
+                onItemLongClicked(item)
+                true
+            }
+        } else {
+            holder.itemView.setOnLongClickListener(null)
         }
     }
 
