@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         if (uris.isNotEmpty()) {
             var projectName = actvNombreProyecto.text.toString().trim()
             if (projectName.isBlank()) {
-                Toast.makeText(this, "Por favor, escribe un nombre de proyecto primero", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.please_enter_project_name), Toast.LENGTH_LONG).show()
                 return@registerForActivityResult
             }
             if (!projectName.lowercase().startsWith("c.c. ")) {
@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
                     enqueueUploadTask(photoFile.absolutePath, projectName, showToast = false)
                 }
             }
-            val message = if (uris.size == 1) "1 foto añadida a la cola." else "${uris.size} fotos añadidas a la cola."
+            val message = if (uris.size == 1) getString(R.string.one_photo_added_to_queue) else getString(R.string.multiple_photos_added_to_queue, uris.size)
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         galleryButton.setOnClickListener {
             val projectName = actvNombreProyecto.text.toString().trim()
             if(projectName.isBlank()) {
-                Toast.makeText(this, "Por favor, escribe un nombre de proyecto", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.please_enter_project_name_short), Toast.LENGTH_SHORT).show()
             } else {
                 galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             }
@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         val imageCapture = imageCapture ?: return
         var projectName = actvNombreProyecto.text.toString().trim()
         if (projectName.isBlank()) {
-            Toast.makeText(this, "Por favor, escribe un nombre de proyecto", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.please_enter_project_name_short), Toast.LENGTH_SHORT).show()
             return
         }
         if (!projectName.lowercase().startsWith("c.c. ")) {
@@ -164,8 +164,8 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Fallo al tomar la foto: ${exc.message}", exc)
-                    Toast.makeText(baseContext, "Fallo al guardar foto", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                    Toast.makeText(baseContext, getString(R.string.photo_capture_failed), Toast.LENGTH_SHORT).show()
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
@@ -179,13 +179,14 @@ class MainActivity : AppCompatActivity() {
         val task = UploadTask(
             imagePath = photoPath,
             projectName = projectName,
+            status = "Pending",
             uuid = UUID.randomUUID().toString()
         )
 
         lifecycleScope.launch {
             AppDatabase.getDatabase(applicationContext).uploadTaskDao().insert(task)
             if (showToast) {
-                Toast.makeText(applicationContext, "Foto añadida a la cola.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, getString(R.string.photo_added_to_queue), Toast.LENGTH_SHORT).show()
             }
             scheduleUploadWorker()
         }
@@ -237,7 +238,7 @@ class MainActivity : AppCompatActivity() {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
             } catch (exc: Exception) {
-                Log.e(TAG, "Fallo al vincular los casos de uso", exc)
+                Log.e(TAG, "Use case binding failed", exc)
             }
 
         }, ContextCompat.getMainExecutor(this))
@@ -253,7 +254,7 @@ class MainActivity : AppCompatActivity() {
             if (allPermissionsGranted()) {
                 startCamera()
             } else {
-                Toast.makeText(this, "Permisos no concedidos por el usuario.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.permissions_not_granted), Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
@@ -290,7 +291,7 @@ class MainActivity : AppCompatActivity() {
         dao.getQueueAsLiveData().observe(this) { tasks ->
             val count = tasks.size
             if (count > 0) {
-                tvQueueCount.text = "$count foto(s) en cola"
+                tvQueueCount.text = getString(R.string.photos_in_queue, count)
                 tvQueueCount.isVisible = true
             } else {
                 tvQueueCount.isVisible = false
@@ -316,7 +317,7 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val ip = prefs.getString("server_ip", null)
         return if (ip.isNullOrBlank()) {
-            Toast.makeText(this, "Por favor, configura la IP del servidor en los ajustes.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.please_configure_server_ip), Toast.LENGTH_LONG).show()
             null
         } else {
             "http://$ip:5000"
@@ -328,7 +329,7 @@ class MainActivity : AppCompatActivity() {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 e.printStackTrace()
-                runOnUiThread { Toast.makeText(applicationContext, "No se pudo obtener el último proyecto", Toast.LENGTH_SHORT).show() }
+                runOnUiThread { Toast.makeText(applicationContext, getString(R.string.could_not_get_last_project), Toast.LENGTH_SHORT).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -359,7 +360,7 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 e.printStackTrace()
                 runOnUiThread {
-                    Toast.makeText(applicationContext, "No se pudo cargar la lista de proyectos", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, getString(R.string.could_not_load_project_list), Toast.LENGTH_SHORT).show()
                 }
             }
 

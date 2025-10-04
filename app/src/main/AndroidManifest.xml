@@ -41,10 +41,8 @@
         </activity>
         <activity android:name=".SettingsActivity" />
         <activity
-            android:name=".ProjectsActivity"
-            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
+            android:name=".ProjectsActivity" />
         <activity android:name=".GalleryActivity" />
-        <activity android:name=".PhotoViewerActivity" android:theme="@style/Theme.MaterialComponents.NoActionBar" />
         <activity android:name=".QueueActivity" />
 
         <provider

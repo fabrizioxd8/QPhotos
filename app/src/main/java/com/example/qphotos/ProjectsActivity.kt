@@ -21,7 +21,7 @@ class ProjectsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_projects)
-        title = "Browse Projects"
+        title = getString(R.string.browse_projects_title)
 
         projectsRecyclerView = findViewById(R.id.projectsRecyclerView)
         breadcrumbTextView = findViewById(R.id.breadcrumbTextView)
@@ -75,13 +75,13 @@ class ProjectsActivity : AppCompatActivity() {
 
             override fun onError() {
                 runOnUiThread {
-                    Toast.makeText(applicationContext, "Failed to load contents", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, getString(R.string.failed_to_load_contents), Toast.LENGTH_SHORT).show()
                 }
             }
         })
     }
 
     private fun updateBreadcrumb() {
-        breadcrumbTextView.text = if (currentPath.isEmpty()) "Home" else "Home / $currentPath"
+        breadcrumbTextView.text = if (currentPath.isEmpty()) getString(R.string.home) else getString(R.string.home_breadcrumb, currentPath)
     }
 }

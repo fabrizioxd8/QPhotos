@@ -29,11 +29,11 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
         val dayPath = intent.getStringExtra("DAY_PATH")
         if (dayPath == null) {
-            Toast.makeText(this, "Error: Missing day path", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.error_missing_day_path), Toast.LENGTH_LONG).show()
             finish()
             return
         }
-        title = dayPath.split("/").lastOrNull() ?: "Gallery"
+        title = dayPath.split("/").lastOrNull() ?: getString(R.string.gallery_title)
 
         photosRecyclerView = findViewById(R.id.photosRecyclerView)
 
@@ -85,7 +85,7 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(applicationContext, "Failed to fetch photos.", Toast.LENGTH_SHORT).show() }
+                runOnUiThread { Toast.makeText(applicationContext, getString(R.string.failed_to_fetch_photos), Toast.LENGTH_SHORT).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -108,10 +108,10 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
     private fun showDeleteConfirmationDialog(photoUrl: String) {
         MaterialAlertDialogBuilder(this)
-            .setTitle("Delete Photo")
-            .setMessage("Are you sure you want to delete this photo?")
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Delete") { _, _ ->
+            .setTitle(getString(R.string.delete_photo_title))
+            .setMessage(getString(R.string.delete_photo_message))
+            .setNegativeButton(getString(R.string.cancel), null)
+            .setPositiveButton(getString(R.string.delete)) { _, _ ->
                 deletePhoto(photoUrl)
             }
             .show()
@@ -126,13 +126,13 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(applicationContext, "Failed to delete photo.", Toast.LENGTH_LONG).show() }
+                runOnUiThread { Toast.makeText(applicationContext, getString(R.string.failed_to_delete_photo), Toast.LENGTH_LONG).show() }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 runOnUiThread {
                     if (response.isSuccessful) {
-                        Toast.makeText(applicationContext, "Photo deleted.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(applicationContext, getString(R.string.photo_deleted), Toast.LENGTH_SHORT).show()
                         val indexToRemove = photoUrls.indexOf(photoUrlToDelete)
                         if (indexToRemove != -1) {
                             photoUrls.removeAt(indexToRemove)
@@ -141,7 +141,7 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
                         }
                         viewer?.dismiss()
                     } else {
-                        Toast.makeText(applicationContext, "Error: ${response.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(applicationContext, getString(R.string.error_with_message, response.message), Toast.LENGTH_LONG).show()
                     }
                 }
             }
