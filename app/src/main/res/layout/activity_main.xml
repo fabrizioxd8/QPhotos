@@ -36,7 +36,7 @@
             android:layout_marginStart="4dp"
             android:layout_marginTop="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Ajustes"
+            android:contentDescription="@string/settings_button_description"
             android:padding="4dp"
             android:src="@drawable/ic_settings"
             app:tint="@android:color/transparent" />
@@ -60,14 +60,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Escribe o selecciona un proyecto">
+                    android:hint="@string/project_name_hint">
 
                     <AutoCompleteTextView
                         android:id="@+id/actvNombreProyecto"
                         style="@style/ProjectNameDropdown"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Escribe o selecciona un proyecto"
+                        android:hint="@string/project_name_hint"
                         android:inputType="text" />
 
                 </com.google.android.material.textfield.TextInputLayout>
@@ -78,7 +78,7 @@
                     android:layout_height="40dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Flash"
+                    android:contentDescription="@string/flash_button_description"
                     android:padding="4dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_flash_off"
@@ -94,7 +94,7 @@
                 android:layout_marginTop="8dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:padding="8dp"
-                android:text="C.C. 0 PROYECTO"
+                tools:text="C.C. 0 PROJECT"
                 android:textColor="@color/brand_teal"
                 android:visibility="gone"
                 tools:visibility="visible"/>
@@ -119,7 +119,7 @@
                 android:textStyle="bold"
                 android:visibility="gone"
                 app:drawableStartCompat="@android:drawable/ic_popup_sync"
-                tools:text="3 foto(s) en cola" />
+                tools:text="3 photo(s) in queue" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
@@ -130,7 +130,7 @@
         android:layout_height="60dp"
         android:layout_marginStart="32dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Ver Proyectos Subidos"
+        android:contentDescription="@string/view_uploaded_projects_description"
         android:elevation="2dp"
         android:padding="12dp"
         android:scaleType="fitCenter"
@@ -148,7 +148,7 @@
         android:layout_height="80dp"
         android:layout_marginBottom="50dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Tomar Foto"
+        android:contentDescription="@string/take_photo_description"
         android:elevation="2dp"
         android:padding="8dp"
         android:scaleType="fitCenter"
@@ -166,7 +166,7 @@
         android:layout_height="60dp"
         android:layout_marginEnd="32dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Subir desde Galería"
+        android:contentDescription="@string/upload_from_gallery_description"
         android:elevation="2dp"
         android:padding="12dp"
         android:scaleType="fitCenter"

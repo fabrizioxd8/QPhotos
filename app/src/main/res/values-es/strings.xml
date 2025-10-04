@@ -26,4 +26,15 @@
     <string name="please_configure_server_ip">Por favor, configura la IP del servidor en los ajustes.</string>
     <string name="could_not_get_last_project">No se pudo obtener el último proyecto</string>
     <string name="could_not_load_project_list">No se pudo cargar la lista de proyectos</string>
+    <string name="server_settings_title">Configuración del Servidor</string>
+    <string name="server_ip_hint">Ej: 192.168.1.50</string>
+    <string name="server_ip_helper_text">"No incluyas 'http://' ni el puerto ':5000'. Solo la dirección IP."</string>
+    <string name="save_button">Guardar</string>
+    <string name="queue_thumbnail_description">Miniatura de la foto en cola</string>
+    <string name="settings_button_description">Ajustes</string>
+    <string name="project_name_hint">Escribe o selecciona un proyecto</string>
+    <string name="flash_button_description">Flash</string>
+    <string name="view_uploaded_projects_description">Ver Proyectos Subidos</string>
+    <string name="take_photo_description">Tomar Foto</string>
+    <string name="upload_from_gallery_description">Subir desde Galería</string>
 </resources>

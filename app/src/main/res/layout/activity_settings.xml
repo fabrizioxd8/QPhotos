@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -9,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Configuración del Servidor"
+        android:text="@string/server_settings_title"
         android:textSize="22sp"
         android:textStyle="bold" />
 
@@ -19,14 +20,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:autofillHints=""
-        android:hint="Ej: 192.168.1.50"
+        android:hint="@string/server_ip_hint"
         android:inputType="textUri" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="No incluyas 'http://' ni el puerto ':5000'. Solo la dirección IP."/>
+        android:text="@string/server_ip_helper_text"/>
 
     <Button
         android:id="@+id/btnSaveIp"
@@ -34,6 +35,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="24dp"
-        android:text="Guardar" />
+        android:text="@string/save_button" />
 
 </LinearLayout>

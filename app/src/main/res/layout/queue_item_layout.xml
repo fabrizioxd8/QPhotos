@@ -22,7 +22,7 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:scaleType="centerCrop"
-            android:contentDescription="Thumbnail de la foto en cola"
+            android:contentDescription="@string/queue_thumbnail_description"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -39,14 +39,14 @@
             app:layout_constraintStart_toEndOf="@id/ivQueueThumbnail"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="C.C. Nombre del Proyecto" />
+            tools:text="C.C. Project Name" />
 
         <TextView
             android:id="@+id/tvQueueStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Pendiente"
+            tools:text="Pending"
             android:textSize="14sp"
             android:textStyle="italic"
             android:textColor="?android:attr/textColorSecondary"
