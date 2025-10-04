@@ -51,16 +51,22 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun onItemClicked(item: FileSystemItem) {
-        if (item.type == "day") {
-            // This is a daily folder, so open the gallery
-            val intent = Intent(this, GalleryActivity::class.java).apply {
-                putExtra("DAY_PATH", item.path)
-            }
-            startActivity(intent)
-        } else {
-            // It's a month or project folder, so navigate into it
+        if (item.type == "folder") {
+            // If the item is a folder, navigate into it
             currentPath = item.path
             loadContents(currentPath)
+        } else {
+            // This is a project folder, so open the gallery
+            val pathParts = item.path.split("/")
+            if (pathParts.size >= 2) {
+                val intent = Intent(this, GalleryActivity::class.java).apply {
+                    putExtra("MONTH_FOLDER", pathParts[0])
+                    putExtra("PROJECT_NAME", pathParts[1])
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Invalid project path", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

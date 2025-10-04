@@ -5,7 +5,6 @@ from PIL import Image, ImageDraw, ImageFont
 import threading
 import io
 import shutil
-import re
 
 app = Flask(__name__)
 
@@ -155,6 +154,26 @@ def get_last_project():
         print(f"Error reading last project file: {e}")
         return jsonify({"error": "Could not read last project file"}), 500
 
+@app.route('/projects', methods=['GET'])
+def list_projects():
+    projects_data = []
+    try:
+        upload_path = UPLOAD_FOLDER
+        month_folders = [d for d in os.listdir(upload_path) if os.path.isdir(os.path.join(upload_path, d))]
+
+        # Sort month folders by modification time (newest first)
+        month_folders.sort(key=lambda d: os.path.getmtime(os.path.join(upload_path, d)), reverse=True)
+
+        for month in month_folders:
+            month_path = os.path.join(upload_path, month)
+            project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
+            for project in project_folders:
+                projects_data.append({"month": month, "name": project})
+        return jsonify(projects_data)
+    except Exception as e:
+        print(f"Error listing projects: {e}")
+        return jsonify({"error": "Could not list projects"}), 500
+
 @app.route('/photos/<month>/<project>', methods=['GET'])
 def list_photos(month, project):
     photos_by_date = {}
@@ -215,77 +234,6 @@ def delete_photo(filepath):
     except Exception as e:
         print(f"Error deleting photo {filepath}: {e}")
         return jsonify({"error": "Could not delete photo"}), 500
-
-@app.route('/browse/', defaults={'path': ''})
-@app.route('/browse/<path:path>')
-def browse(path):
-    base_dir = os.path.abspath(UPLOAD_FOLDER)
-    requested_path = os.path.abspath(os.path.join(base_dir, path))
-
-    if not requested_path.startswith(base_dir):
-        return jsonify({"error": "Access denied"}), 403
-
-    if not os.path.isdir(requested_path):
-        return jsonify([]), 200
-
-    try:
-        dir_list = [d for d in os.listdir(requested_path) if os.path.isdir(os.path.join(requested_path, d))]
-
-        # Determine sorting strategy based on path depth
-        path_depth = len(path.split(os.sep)) if path else 0
-
-        if path_depth == 0: # Root level (months)
-            # Sort month folders chronologically descending
-            def sort_key(name):
-                try:
-                    return int(name.split()[0])
-                except (ValueError, IndexError):
-                    return -1 # Should not happen for month folders
-            dir_list.sort(key=sort_key, reverse=True)
-        else:
-            # Sort other folders alphabetically
-            dir_list.sort()
-
-        items = []
-        for name in dir_list:
-            relative_path = os.path.join(path, name)
-
-            # Determine folder type
-            folder_type = "project" # Default
-            if path_depth == 0:
-                folder_type = "month"
-            elif re.match(r'^\d{4}-\d{2}-\d{2}$', name): # Simple date check
-                folder_type = "day"
-
-            items.append({
-                "name": name,
-                "path": relative_path,
-                "type": folder_type
-            })
-
-        return jsonify(items)
-    except Exception as e:
-        print(f"Error browsing path '{path}': {e}")
-        return jsonify({"error": "Could not browse directory"}), 500
-
-@app.route('/list_photos_in_day/<path:path>')
-def list_photos_in_day(path):
-    base_dir = os.path.abspath(UPLOAD_FOLDER)
-    requested_path = os.path.abspath(os.path.join(base_dir, path))
-
-    if not requested_path.startswith(base_dir) or not os.path.isdir(requested_path):
-        return jsonify({"error": "Invalid or non-existent directory"}), 404
-
-    try:
-        photo_urls = []
-        for filename in sorted(os.listdir(requested_path)):
-            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                # Construct the relative path for the URL
-                photo_urls.append(os.path.join(path, filename))
-        return jsonify(photo_urls)
-    except Exception as e:
-        print(f"Error listing photos in day '{path}': {e}")
-        return jsonify({"error": "Could not list photos"}), 500
 
 if __name__ == '__main__':
     from waitress import serve
