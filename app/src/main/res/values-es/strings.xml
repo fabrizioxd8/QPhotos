@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">QFotos</string>
+    <string name="app_name">QPhotos</string>
     <string name="project_name_hint">Nombre del Proyecto</string>
     <string name="last_project_label">Último Proyecto:</string>
     <string name="server_ip_hint">Dirección IP del Servidor</string>
@@ -50,7 +50,7 @@
     <string name="browse_projects_title">Explorar Proyectos</string>
     <string name="rename_project">Renombrar Proyecto</string>
     <string name="delete_project">Eliminar Proyecto</string>
-    <string name="are_you_sure_you_want_to_delete">¿Estás seguro de que quieres eliminar este proyecto?</string>
+    <string name="are_you_sure_you_want_to_delete">¿Estás seguro de que quieres eliminar &quot;%1$s&quot;?</string>
     <string name="project_renamed">Proyecto renombrado</string>
     <string name="failed_to_rename_project">Error al renombrar el proyecto</string>
     <string name="project_deleted">Proyecto eliminado</string>

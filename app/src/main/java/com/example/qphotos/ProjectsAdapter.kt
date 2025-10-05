@@ -5,13 +5,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 class ProjectsAdapter(
-    private var items: List<FileSystemItem>,
     private val onItemClicked: (FileSystemItem) -> Unit,
     private val onItemLongClicked: (FileSystemItem) -> Unit
-) : RecyclerView.Adapter<ProjectsAdapter.ViewHolder>() {
+) : ListAdapter<FileSystemItem, ProjectsAdapter.ViewHolder>(ProjectDiffCallback()) {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val itemName: TextView = view.findViewById(R.id.tvProjectName)
@@ -25,14 +26,14 @@ class ProjectsAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = items[position]
+        val item = getItem(position)
         holder.itemName.text = item.name
 
         val iconRes = when (item.type) {
-            "month" -> R.drawable.ic_folder
+            "month" -> R.drawable.ic_calendar_month
             "project" -> R.drawable.ic_folder
             "day" -> R.drawable.ic_gallery
-            else -> R.drawable.ic_folder
+            else -> R.drawable.ic_folder // Default fallback icon
         }
         holder.itemIcon.setImageResource(iconRes)
 
@@ -40,20 +41,24 @@ class ProjectsAdapter(
             onItemClicked(item)
         }
 
+        // Enable long clicks only on folders that are not date-specific or top-level month folders
         if (item.type == "project") {
             holder.itemView.setOnLongClickListener {
                 onItemLongClicked(item)
                 true
             }
         } else {
-            holder.itemView.setOnLongClickListener(null)
+            holder.itemView.isLongClickable = false
         }
     }
+}
 
-    override fun getItemCount() = items.size
+class ProjectDiffCallback : DiffUtil.ItemCallback<FileSystemItem>() {
+    override fun areItemsTheSame(oldItem: FileSystemItem, newItem: FileSystemItem): Boolean {
+        return oldItem.path == newItem.path
+    }
 
-    fun updateItems(newItems: List<FileSystemItem>) {
-        items = newItems
-        notifyDataSetChanged()
+    override fun areContentsTheSame(oldItem: FileSystemItem, newItem: FileSystemItem): Boolean {
+        return oldItem == newItem
     }
 }

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -11,12 +12,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.chip.Chip
 import java.io.File
 
 class ProjectsActivity : AppCompatActivity() {
 
     private lateinit var projectsRecyclerView: RecyclerView
-    private lateinit var breadcrumbTextView: TextView
+    private lateinit var breadcrumbContainer: LinearLayout
     private lateinit var projectsAdapter: ProjectsAdapter
     private var currentPath = ""
 
@@ -26,7 +28,7 @@ class ProjectsActivity : AppCompatActivity() {
         title = getString(R.string.browse_projects_title)
 
         projectsRecyclerView = findViewById(R.id.projectsRecyclerView)
-        breadcrumbTextView = findViewById(R.id.breadcrumbTextView)
+        breadcrumbContainer = findViewById(R.id.breadcrumbContainer)
 
         setupRecyclerView()
         loadContents(currentPath)
@@ -45,7 +47,6 @@ class ProjectsActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         projectsAdapter = ProjectsAdapter(
-            emptyList(),
             onItemClicked = { item -> onItemClicked(item) },
             onItemLongClicked = { item -> onItemLongClicked(item) }
         )
@@ -60,8 +61,7 @@ class ProjectsActivity : AppCompatActivity() {
             }
             startActivity(intent)
         } else {
-            currentPath = item.path
-            loadContents(currentPath)
+            loadContents(item.path)
         }
     }
 
@@ -116,7 +116,7 @@ class ProjectsActivity : AppCompatActivity() {
             override fun onSuccess() {
                 runOnUiThread {
                     Toast.makeText(applicationContext, getString(R.string.project_renamed), Toast.LENGTH_SHORT).show()
-                    loadContents(currentPath)
+                    loadContents(currentPath) // Reload current directory to show the change
                 }
             }
 
@@ -133,7 +133,7 @@ class ProjectsActivity : AppCompatActivity() {
             override fun onSuccess() {
                 runOnUiThread {
                     Toast.makeText(applicationContext, getString(R.string.project_deleted), Toast.LENGTH_SHORT).show()
-                    loadContents(currentPath)
+                    loadContents(currentPath) // Reload current directory to show the change
                 }
             }
 
@@ -146,11 +146,12 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun loadContents(path: String) {
+        currentPath = path
         ApiClient.getContents(this, path, object : ApiClient.ApiCallback<List<FileSystemItem>> {
             override fun onSuccess(result: List<FileSystemItem>) {
                 runOnUiThread {
-                    projectsAdapter.updateItems(result)
-                    updateBreadcrumb()
+                    projectsAdapter.submitList(result)
+                    updateBreadcrumb(currentPath)
                 }
             }
 
@@ -162,7 +163,40 @@ class ProjectsActivity : AppCompatActivity() {
         })
     }
 
-    private fun updateBreadcrumb() {
-        breadcrumbTextView.text = if (currentPath.isEmpty()) getString(R.string.home) else getString(R.string.home_breadcrumb, currentPath)
+    private fun updateBreadcrumb(path: String) {
+        breadcrumbContainer.removeAllViews()
+
+        // Add Home button
+        val homeChip = createBreadcrumbChip(getString(R.string.home), "")
+        breadcrumbContainer.addView(homeChip)
+
+        if (path.isEmpty()) return
+
+        val pathSegments = path.split('/')
+        var currentIteratedPath = ""
+
+        for (segment in pathSegments) {
+            breadcrumbContainer.addView(createBreadcrumbSeparator())
+            currentIteratedPath = if (currentIteratedPath.isEmpty()) segment else "$currentIteratedPath/$segment"
+            val chip = createBreadcrumbChip(segment, currentIteratedPath)
+            breadcrumbContainer.addView(chip)
+        }
+    }
+
+    private fun createBreadcrumbChip(text: String, path: String): Chip {
+        val chip = Chip(this)
+        chip.text = text
+        chip.setOnClickListener { 
+            if (currentPath != path) { // Prevent reloading the same directory
+                loadContents(path)
+            }
+        }
+        return chip
+    }
+
+    private fun createBreadcrumbSeparator(): TextView {
+        val separator = TextView(this)
+        separator.text = " / "
+        return separator
     }
 }
