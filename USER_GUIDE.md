@@ -43,6 +43,6 @@ You can easily browse the photos and manage the projects that have already been 
 1.  **Open Projects**: On the main screen, tap the **View Projects** icon (the folder to the left of the shutter button).
 2.  **Navigate**: This will open a file explorer that shows your projects organized by month, project, and day. Tap on any folder to navigate deeper.
 3.  **View Photos**: When you navigate to a specific day, you will see a gallery of all the photos taken on that day. Tap any photo to open it in a full-screen viewer where you can zoom in and swipe between images.
-4.  **Manage Projects**: To rename or delete a project folder, simply **long-press** (tap and hold) on the project's name in the file explorer. A menu will appear with options to "Rename" or "Delete."
+4.  **Manage Folders**: To rename or delete any folder (including top-level projects or nested sub-folders), simply **long-press** (tap and hold) on the folder's name in the file explorer. A menu will appear with options to "Rename" or "Delete."
 
 Thank you for using QPhotos!

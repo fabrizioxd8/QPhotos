@@ -2,6 +2,7 @@ package com.example.qphotos
 
 import android.content.Context
 import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -33,7 +34,6 @@ object ApiClient {
         return "$baseUrl/uploads/$path"
     }
 
-    // Generic callback interfaces
     interface ApiCallback<T> {
         fun onSuccess(result: T)
         fun onError(message: String)
@@ -44,7 +44,6 @@ object ApiClient {
         fun onError(message: String)
     }
 
-    // Synchronous function for use in workers
     fun uploadPhoto(context: Context, task: UploadTask): Result<Unit> {
         val baseUrl = getBaseUrl(context) ?: return Result.failure(IOException("Server IP not configured"))
         val url = "$baseUrl/upload"
@@ -74,7 +73,6 @@ object ApiClient {
             Result.failure(e)
         }
     }
-
 
     fun getContents(context: Context, path: String, callback: ApiCallback<List<FileSystemItem>>) {
         val baseUrl = getBaseUrl(context) ?: return callback.onError("Server IP not configured")
@@ -111,13 +109,20 @@ object ApiClient {
 
     fun renameProject(context: Context, item: FileSystemItem, newName: String, callback: SimpleCallback) {
         val baseUrl = getBaseUrl(context) ?: return callback.onError("Server IP not configured")
-        val month = File(item.path).parent ?: return
-        val name = File(item.path).name
-        val url = "$baseUrl/project/$month/$name"
+        
+        val httpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()
+            ?.addPathSegment("project")
+            ?.addPathSegments(item.path)
+            ?.build()
+
+        if (httpUrl == null) {
+            callback.onError("Invalid URL")
+            return
+        }
 
         val jsonObject = JSONObject().put("new_name", newName)
         val body = jsonObject.toString().toRequestBody(jsonMediaType)
-        val request = Request.Builder().url(url).put(body).build()
+        val request = Request.Builder().url(httpUrl).put(body).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -125,18 +130,25 @@ object ApiClient {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) callback.onSuccess() else callback.onError("Server error: ${response.code}")
+                if (response.isSuccessful) callback.onSuccess() else callback.onError("Failed to rename project")
             }
         })
     }
 
     fun deleteProject(context: Context, item: FileSystemItem, callback: SimpleCallback) {
         val baseUrl = getBaseUrl(context) ?: return callback.onError("Server IP not configured")
-        val month = File(item.path).parent ?: return
-        val name = File(item.path).name
-        val url = "$baseUrl/project/$month/$name"
+        
+        val httpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()
+            ?.addPathSegment("project")
+            ?.addPathSegments(item.path)
+            ?.build()
 
-        val request = Request.Builder().url(url).delete().build()
+        if (httpUrl == null) {
+            callback.onError("Invalid URL")
+            return
+        }
+
+        val request = Request.Builder().url(httpUrl).delete().build()
 
         client.newCall(request).enqueue(object : Callback {
              override fun onFailure(call: Call, e: IOException) {
@@ -144,7 +156,7 @@ object ApiClient {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) callback.onSuccess() else callback.onError("Server error: ${response.code}")
+                if (response.isSuccessful) callback.onSuccess() else callback.onError("Failed to delete project")
             }
         })
     }

@@ -1,49 +1,61 @@
 <resources>
-    <string name="home">Inicio</string>
-    <string name="home_breadcrumb">Inicio / %s</string>
-    <string name="status_pending">Pendiente</string>
-    <string name="status_uploading">Subiendo</string>
-    <string name="browse_projects_title">Explorar Proyectos</string>
-    <string name="error_missing_day_path">Error: Falta la ruta del día</string>
+    <string name="app_name">QFotos</string>
+    <string name="project_name_hint">Nombre del Proyecto</string>
+    <string name="last_project_label">Último Proyecto:</string>
+    <string name="server_ip_hint">Dirección IP del Servidor</string>
+    <string name="settings_title">Configuración</string>
     <string name="gallery_title">Galería</string>
-    <string name="failed_to_fetch_photos">Error al cargar las fotos.</string>
+    <string name="empty_folder">Esta carpeta está vacía.</string>
+    <string name="queue_title">Cola de Subida</string>
+    <string name="delete">Eliminar</string>
+    <string name="rename">Renombrar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="rename_project_title">Renombrar Proyecto</string>
+    <string name="delete_project_title">Eliminar Proyecto</string>
+    <string name="delete_project_message">¿Estás seguro de que quieres eliminar este proyecto y todo su contenido?</string>
     <string name="delete_photo_title">Eliminar Foto</string>
     <string name="delete_photo_message">¿Estás seguro de que quieres eliminar esta foto?</string>
-    <string name="cancel">Cancelar</string>
-    <string name="delete">Eliminar</string>
-    <string name="failed_to_delete_photo">Error al eliminar la foto.</string>
-    <string name="photo_deleted">Foto eliminada.</string>
-    <string name="error_with_message">Error: %s</string>
-    <string name="failed_to_load_contents">Error al cargar el contenido</string>
-    <string name="please_enter_project_name">Por favor, escribe un nombre de proyecto primero</string>
+    <string name="photo_deleted">Foto eliminada</string>
+    <string name="please_enter_project_name">Por favor, introduce un nombre de proyecto antes de seleccionar de la galería.</string>
+    <string name="please_enter_project_name_short">Por favor, introduce un nombre de proyecto.</string>
     <string name="one_photo_added_to_queue">1 foto añadida a la cola.</string>
     <string name="multiple_photos_added_to_queue">%d fotos añadidas a la cola.</string>
-    <string name="please_enter_project_name_short">Por favor, escribe un nombre de proyecto</string>
-    <string name="photo_capture_failed">Fallo al guardar foto</string>
-    <string name="photo_added_to_queue">Foto añadida a la cola.</string>
+    <string name="photo_capture_failed">La captura de la foto falló.</string>
     <string name="permissions_not_granted">Permisos no concedidos por el usuario.</string>
-    <string name="photos_in_queue">%d foto(s) en cola</string>
-    <string name="please_configure_server_ip">Por favor, configura la IP del servidor en los ajustes.</string>
-    <string name="could_not_get_last_project">No se pudo obtener el último proyecto</string>
-    <string name="could_not_load_project_list">No se pudo cargar la lista de proyectos</string>
+    <string name="error_missing_day_path">Error: No se ha proporcionado la ruta del día.</string>
+    <string name="photos_in_queue">%d Fotos en Cola</string>
+    <string name="photo_added_to_queue">Foto añadida a la cola</string>
+
+    <!-- Upload Worker -->
+    <string name="notification_title_uploading">Subiendo fotos…</string>
+    <string name="notification_channel_name">Canal de Subida</string>
+    <string name="status_uploading">Subiendo</string>
+    <string name="status_failed">Fallido</string>
+    <string name="status_pending">Pendiente</string>
+
+    <!-- Content Descriptions & Accessibility -->
+    <string name="settings_button_description">Abrir pantalla de configuración</string>
+    <string name="flash_button_description">Cambiar modo de flash</string>
+    <string name="view_uploaded_projects_description">Ver proyectos subidos</string>
+    <string name="take_photo_description">Tomar una nueva foto</string>
+    <string name="upload_from_gallery_description">Subir fotos de la galería</string>
+    <string name="queue_thumbnail_description">Miniatura de una foto en la cola de subida</string>
+
+    <!-- Settings Screen -->
     <string name="server_settings_title">Configuración del Servidor</string>
-    <string name="server_ip_hint">Ej: 192.168.1.50</string>
-    <string name="server_ip_helper_text">"No incluyas 'http://' ni el puerto ':5000'. Solo la dirección IP."</string>
+    <string name="server_ip_helper_text">ej., 192.168.1.100</string>
     <string name="save_button">Guardar</string>
-    <string name="queue_thumbnail_description">Miniatura de la foto en cola</string>
-    <string name="settings_button_description">Ajustes</string>
-    <string name="project_name_hint">Escribe o selecciona un proyecto</string>
-    <string name="flash_button_description">Flash</string>
-    <string name="view_uploaded_projects_description">Ver Proyectos Subidos</string>
-    <string name="take_photo_description">Tomar Foto</string>
-    <string name="upload_from_gallery_description">Subir desde Galería</string>
-    <string name="rename">Renombrar</string>
+
+    <!-- Projects Screen -->
+    <string name="browse_projects_title">Explorar Proyectos</string>
     <string name="rename_project">Renombrar Proyecto</string>
-    <string name="are_you_sure_you_want_to_delete">"¿Estás seguro de que quieres eliminar '%s'?"</string>
+    <string name="delete_project">Eliminar Proyecto</string>
+    <string name="are_you_sure_you_want_to_delete">¿Estás seguro de que quieres eliminar este proyecto?</string>
     <string name="project_renamed">Proyecto renombrado</string>
     <string name="failed_to_rename_project">Error al renombrar el proyecto</string>
-    <string name="delete_project">Eliminar Proyecto</string>
     <string name="project_deleted">Proyecto eliminado</string>
     <string name="failed_to_delete_project">Error al eliminar el proyecto</string>
-    <string name="empty_folder">Esta carpeta está vacía.</string>
+    <string name="home">Inicio</string>
+    <string name="home_breadcrumb">Inicio /</string>
+
 </resources>

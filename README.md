@@ -11,7 +11,7 @@ This project follows modern Android development practices, featuring a clean, de
 The system consists of two main parts:
 
 1.  **The Android App**: A Kotlin-based application for capturing, selecting, and queuing photos for upload. It features a clean architecture that separates UI, networking, and camera logic.
-2.  **The Python Server**: A Flask-based server that receives the uploaded images, processes them, and organizes them into a clear folder structure.
+2.  **The Python Server**: A Flask-based server that receives the uploaded images, processes them, and organizes them into a clear, hierarchical folder structure. It is designed to be platform-independent and can manage nested folder structures.
 
 ## App Architecture & Key Features
 
@@ -30,7 +30,7 @@ The QPhotos Android app is built with a focus on maintainability and modern deve
 -   **Multiple Project Input Methods**: Users can type a new project name, select a recent project from a dropdown, or tap the "last project" label for maximum speed.
 -   **Gallery Integration**: Select multiple images from the device's gallery to add to the upload queue.
 -   **Robust Upload Queue**: Photos are added to a background queue managed by `WorkManager`, ensuring reliable uploads even with intermittent network connectivity.
--   **Hierarchical File Explorer**: Browse projects on the server through a clean, multi-level file explorer. Users can also **long-press** on projects to **rename** or **delete** them.
+-   **Hierarchical File Explorer**: Browse projects on the server through a clean, multi-level file explorer. Users can also **long-press** on any folder (including nested sub-folders) to **rename** or **delete** it.
 -   **Full-Screen Photo Viewer**: View photos with a smooth, interactive, full-screen viewer.
 -   **Bilingual Support**: The app is fully localized in both English and Spanish.
 

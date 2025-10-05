@@ -14,7 +14,7 @@ import kotlinx.coroutines.delay
 import java.io.File
 import java.io.IOException
 
-class UploadWorker(context: Context, workerParams: WorkerParameters) :
+class UploadWorker(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -24,10 +24,11 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
 
     private fun createForegroundInfo(): ForegroundInfo {
         val channelId = "upload_channel"
-        val title = "Subiendo fotos..."
+        val title = context.getString(R.string.notification_title_uploading)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Canal de Subida", NotificationManager.IMPORTANCE_DEFAULT)
+            val channelName = context.getString(R.string.notification_channel_name)
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT)
             val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
@@ -62,7 +63,7 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
         while (true) {
             val task = dao.getNextTask() ?: break
 
-            task.status = "Subiendo..."
+            task.status = context.getString(R.string.status_uploading)
             dao.update(task)
             Log.d(TAG, "Processing task ${task.id} for project ${task.projectName}. Status: Uploading")
 
@@ -71,7 +72,7 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             if (result.isSuccess) {
                 Log.i(TAG, "Successfully uploaded task ${task.id}. Deleting task and file.")
                 dao.delete(task)
-                delay(500)
+                delay(500) 
                 File(task.imagePath).delete()
             } else {
                 val exception = result.exceptionOrNull()
@@ -79,7 +80,7 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
                     Log.e(TAG, "File for task ${task.id} not found. Deleting task.")
                     dao.delete(task)
                 } else {
-                    task.status = "Fallido"
+                    task.status = context.getString(R.string.status_failed)
                     dao.update(task)
                     Log.e(TAG, "Failed to upload task ${task.id}: ${exception?.message}")
                     allUploadsSuccessful = false
