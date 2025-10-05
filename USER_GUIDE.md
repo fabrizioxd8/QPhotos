@@ -1,41 +1,48 @@
-# QPhotos User Guide
+# QPhotos: User Guide
 
-Welcome to QPhotos! This guide will walk you through the key features of the app and help you get started with organizing your field photography.
+Welcome to QPhotos! This guide will walk you through the main features of the app and help you get started with documenting your fieldwork.
 
-## Getting Started
+## 1. Setting Up the Server Connection
 
-### 1. Setting Up the Server Connection
-Before you can upload photos, you need to connect the app to your local server.
--   Open the app and go to the **Settings** screen.
--   Enter the IP address of the computer running the QPhotos server.
--   Save the settings. The app is now ready to communicate with your server.
+Before you can upload photos, you need to tell the app where to find your server.
 
-### 2. Taking Your First Photo
--   From the main screen, tap the **Camera** button.
--   Enter a **Project Name** for the photos you are about to take. The app will remember this name for future photos in the same session.
--   Use the camera interface to take your photos. You can control the flash using the icons at the top.
--   When you take a photo, it is automatically added to the **Upload Queue**.
+1.  **Open Settings**: Tap the **Settings** icon (the gear) on the main screen.
+2.  **Enter Server IP**: In the Settings screen, you will see a field for the **Server IP Address**. Enter the IP address of the computer running the QPhotos Python server (e.g., `192.168.1.100`).
+3.  **Save**: The IP address is saved automatically as you type.
 
-## Core Features
+*Note: You must be connected to the same Wi-Fi network as your server for uploads to work.*
 
-### The File Explorer
-The main screen of the app is a powerful file explorer that helps you navigate through all your projects.
--   **Months**: The top level shows folders for each month, with the most recent month at the top.
--   **Projects**: Tap on a month to see all the projects you worked on during that time. If you have nested projects (e.g., a "Florida" sub-project within a main "USA" project), you can navigate into them just like regular folders.
--   **Daily Folders**: Inside each project, you will find folders for each day you took photos, named with the date (e.g., `2025-10-04`).
+## 2. Taking and Uploading Photos
 
-### Photo Gallery
--   When you tap on a **daily folder**, the app will open a grid view showing all the photos taken on that day.
--   Tap on any photo to view it in a full-screen gallery.
--   **Gestures**:
-    -   **Pinch** to zoom in and out.
-    -   **Swipe** left and right to navigate between photos.
-    -   **Swipe down** to dismiss the gallery and return to the grid view.
--   **Deleting Photos**: While viewing a photo full-screen, tap the **trash can icon** in the corner to delete it. You will be asked to confirm before the photo is permanently removed from the server.
+QPhotos is designed to make capturing and organizing photos as simple as possible.
 
-### The Upload Queue
--   The **Queue** screen shows you a list of all photos that are waiting to be uploaded to the server.
--   Uploads happen automatically in the background, so you can continue working even if your network connection is unstable. `WorkManager` ensures the uploads will proceed whenever a connection is available.
--   Once a photo is successfully uploaded, it will disappear from the queue.
+### Step 1: Set the Project Name
 
-We hope this guide helps you make the most of QPhotos!
+Before you take a photo, you must set a project name. You have a few options:
+
+-   **Type a Project Name**: Tap on the "Project Name" field and type in the name of your current project.
+-   **Use the Last Project**: For convenience, the last project you used is displayed in the top right. Simply tap this text to automatically populate the project name field.
+-   **Select from a List**: Tap the dropdown arrow on the "Project Name" field to see a list of projects from the current month and select one.
+
+### Step 2: Capture Photos
+
+-   **From the Camera**: Aim your device and tap the large **shutter button** at the bottom of the screen. A sound will confirm the photo has been taken and added to the upload queue.
+-   **From the Gallery**: Tap the **gallery icon** (to the right of the shutter button). This will open your device's gallery, where you can select one or more existing photos to add to the upload queue.
+
+## 3. Managing the Upload Queue
+
+All photos you take or select are added to a background upload queue. This ensures that your photos will be uploaded reliably, even if your network connection is temporarily lost.
+
+-   **Viewing the Queue**: A counter on the main screen shows how many photos are currently pending in the queue (e.g., "10 Photos in Queue"). Tap this text to go to the **Queue Screen**.
+-   **The Queue Screen**: This screen shows a list of all photos waiting to be uploaded, along with their current status ("Pending," "Uploading," or "Failed").
+
+## 4. Browsing and Managing Projects
+
+You can easily browse the photos and manage the projects that have already been successfully uploaded to the server.
+
+1.  **Open Projects**: On the main screen, tap the **View Projects** icon (the folder to the left of the shutter button).
+2.  **Navigate**: This will open a file explorer that shows your projects organized by month, project, and day. Tap on any folder to navigate deeper.
+3.  **View Photos**: When you navigate to a specific day, you will see a gallery of all the photos taken on that day. Tap any photo to open it in a full-screen viewer where you can zoom in and swipe between images.
+4.  **Manage Projects**: To rename or delete a project folder, simply **long-press** (tap and hold) on the project's name in the file explorer. A menu will appear with options to "Rename" or "Delete."
+
+Thank you for using QPhotos!

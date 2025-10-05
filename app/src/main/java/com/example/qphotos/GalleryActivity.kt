@@ -3,24 +3,22 @@ package com.example.qphotos
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.stfalcon.imageviewer.StfalconImageViewer
 import com.stfalcon.imageviewer.loader.ImageLoader as StfalconImageLoader
-import okhttp3.*
-import java.io.IOException
-import org.json.JSONArray
 
 class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
 
     private lateinit var photosRecyclerView: RecyclerView
     private lateinit var galleryAdapter: GalleryAdapter
-    private val client = OkHttpClient()
-    private var photoUrls = mutableListOf<String>()
+    private lateinit var emptyFolderMessage: TextView
     private var viewer: StfalconImageViewer<String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,74 +34,73 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
         title = dayPath.split("/").lastOrNull() ?: getString(R.string.gallery_title)
 
         photosRecyclerView = findViewById(R.id.photosRecyclerView)
+        emptyFolderMessage = findViewById(R.id.emptyFolderMessage)
 
         setupRecyclerView()
         fetchPhotos(dayPath)
     }
 
     override fun loadImage(imageView: ImageView, imageUrl: String) {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val ip = prefs.getString("server_ip", null)
-        val fullUrl = "http://$ip:5000/uploads/$imageUrl"
-        imageView.load(fullUrl)
+        val fullUrl = ApiClient.getUploadUrl(this, imageUrl)
+        imageView.load(fullUrl) {
+            crossfade(true)
+        }
     }
 
     private fun setupRecyclerView() {
-        galleryAdapter = GalleryAdapter(photoUrls) { startPosition ->
-            showPhotoViewer(startPosition)
+        galleryAdapter = GalleryAdapter { photoUrl ->
+            val startPosition = galleryAdapter.currentList.indexOf(photoUrl)
+            if (startPosition != -1) {
+                showPhotoViewer(startPosition)
+            }
         }
         photosRecyclerView.adapter = galleryAdapter
-        photosRecyclerView.layoutManager = GridLayoutManager(this, 3) // Simple grid
+        photosRecyclerView.layoutManager = GridLayoutManager(this, 3)
     }
 
     private fun showPhotoViewer(startPosition: Int) {
         val overlayView = layoutInflater.inflate(R.layout.photo_overlay, photosRecyclerView, false)
         val deleteButtonInOverlay = overlayView.findViewById<ImageButton>(R.id.deleteButton)
+        val currentPhotoList = galleryAdapter.currentList
 
-        viewer = StfalconImageViewer.Builder(this, photoUrls, this)
+        viewer = StfalconImageViewer.Builder(this, currentPhotoList, this)
             .withStartPosition(startPosition)
             .withOverlayView(overlayView)
             .withImageChangeListener { position ->
-                // Update the delete button listener when the image changes
                 deleteButtonInOverlay.setOnClickListener {
-                    showDeleteConfirmationDialog(photoUrls[position])
+                    showDeleteConfirmationDialog(currentPhotoList[position])
                 }
             }
             .show()
 
-        // Initial setup for the delete button
         deleteButtonInOverlay.setOnClickListener {
-            showDeleteConfirmationDialog(photoUrls[startPosition])
+            showDeleteConfirmationDialog(currentPhotoList[startPosition])
         }
     }
 
     private fun fetchPhotos(dayPath: String) {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val ip = prefs.getString("server_ip", null) ?: return
-        val url = "http://$ip:5000/list_photos_in_day/$dayPath"
-        val request = Request.Builder().url(url).build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(applicationContext, getString(R.string.failed_to_fetch_photos), Toast.LENGTH_SHORT).show() }
+        ApiClient.getContents(this, dayPath, object : ApiClient.ApiCallback<List<FileSystemItem>> {
+            override fun onSuccess(result: List<FileSystemItem>) {
+                val newPhotoUrls = result.filter { it.type == "photo" }.map { it.path }
+                runOnUiThread {
+                    updateUiWithPhotos(newPhotoUrls)
+                }
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body.string()
-                    val newPhotoUrls = mutableListOf<String>()
-                    val jsonArray = JSONArray(responseBody)
-                    for (i in 0 until jsonArray.length()) {
-                        newPhotoUrls.add(jsonArray.getString(i))
-                    }
-                    runOnUiThread {
-                        photoUrls.clear()
-                        photoUrls.addAll(newPhotoUrls)
-                        galleryAdapter.notifyDataSetChanged()
-                    }
+            override fun onError(message: String) {
+                runOnUiThread {
+                    Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+                    updateUiWithPhotos(emptyList())
                 }
             }
         })
+    }
+
+    private fun updateUiWithPhotos(newPhotoUrls: List<String>) {
+        galleryAdapter.submitList(newPhotoUrls)
+
+        photosRecyclerView.isVisible = newPhotoUrls.isNotEmpty()
+        emptyFolderMessage.isVisible = newPhotoUrls.isEmpty()
     }
 
     private fun showDeleteConfirmationDialog(photoUrl: String) {
@@ -117,33 +114,23 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
             .show()
     }
 
-
     private fun deletePhoto(photoUrlToDelete: String) {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val ip = prefs.getString("server_ip", null) ?: return
-        val url = "http://$ip:5000/photo/$photoUrlToDelete"
-        val request = Request.Builder().url(url).delete().build()
+        ApiClient.deletePhoto(this, photoUrlToDelete, object : ApiClient.SimpleCallback {
+            override fun onSuccess() {
+                runOnUiThread {
+                    Toast.makeText(applicationContext, getString(R.string.photo_deleted), Toast.LENGTH_SHORT).show()
+                    viewer?.dismiss()
 
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(applicationContext, getString(R.string.failed_to_delete_photo), Toast.LENGTH_LONG).show() }
+                    // Create a new list without the deleted item and submit it.
+                    val newList = galleryAdapter.currentList.toMutableList().apply {
+                        remove(photoUrlToDelete)
+                    }
+                    updateUiWithPhotos(newList)
+                }
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                runOnUiThread {
-                    if (response.isSuccessful) {
-                        Toast.makeText(applicationContext, getString(R.string.photo_deleted), Toast.LENGTH_SHORT).show()
-                        val indexToRemove = photoUrls.indexOf(photoUrlToDelete)
-                        if (indexToRemove != -1) {
-                            photoUrls.removeAt(indexToRemove)
-                            galleryAdapter.notifyItemRemoved(indexToRemove)
-                            galleryAdapter.notifyItemRangeChanged(indexToRemove, photoUrls.size)
-                        }
-                        viewer?.dismiss()
-                    } else {
-                        Toast.makeText(applicationContext, getString(R.string.error_with_message, response.message), Toast.LENGTH_LONG).show()
-                    }
-                }
+            override fun onError(message: String) {
+                runOnUiThread { Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show() }
             }
         })
     }

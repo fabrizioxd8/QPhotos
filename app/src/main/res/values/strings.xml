@@ -29,7 +29,7 @@
     <string name="could_not_load_project_list">Could not load the project list</string>
     <string name="server_settings_title">Server Settings</string>
     <string name="server_ip_hint">E.g., 192.168.1.50</string>
-    <string name="server_ip_helper_text">"Don\'t include \'http://\' or the port \':5000\'. Just the IP address."</string>
+    <string name="server_ip_helper_text">"Don't include 'http://' or the port ':5000'. Just the IP address."</string>
     <string name="save_button">Save</string>
     <string name="queue_thumbnail_description">Queued photo thumbnail</string>
     <string name="settings_button_description">Settings</string>
@@ -40,10 +40,11 @@
     <string name="upload_from_gallery_description">Upload from Gallery</string>
     <string name="rename">Rename</string>
     <string name="rename_project">Rename Project</string>
-    <string name="are_you_sure_you_want_to_delete">Are you sure you want to delete \'%s\'?</string>
+    <string name="are_you_sure_you_want_to_delete">"Are you sure you want to delete '%s'?"</string>
     <string name="project_renamed">Project renamed</string>
     <string name="failed_to_rename_project">Failed to rename project</string>
     <string name="delete_project">Delete Project</string>
     <string name="project_deleted">Project deleted</string>
     <string name="failed_to_delete_project">Failed to delete project</string>
+    <string name="empty_folder">This folder is empty.</string>
 </resources>

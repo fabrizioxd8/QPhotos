@@ -1,6 +1,5 @@
 package com.example.qphotos
 
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
@@ -19,7 +18,6 @@ class ProjectsActivity : AppCompatActivity() {
     private lateinit var projectsRecyclerView: RecyclerView
     private lateinit var breadcrumbTextView: TextView
     private lateinit var projectsAdapter: ProjectsAdapter
-    private lateinit var repository: ProjectRepository
     private var currentPath = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +27,6 @@ class ProjectsActivity : AppCompatActivity() {
 
         projectsRecyclerView = findViewById(R.id.projectsRecyclerView)
         breadcrumbTextView = findViewById(R.id.breadcrumbTextView)
-        repository = ProjectRepository(this)
 
         setupRecyclerView()
         loadContents(currentPath)
@@ -115,15 +112,15 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun renameProject(item: FileSystemItem, newName: String) {
-        repository.renameProject(item, newName, object : ProjectRepository.Callback {
+        ApiClient.renameProject(this, item, newName, object : ApiClient.SimpleCallback {
             override fun onSuccess() {
                 runOnUiThread {
                     Toast.makeText(applicationContext, getString(R.string.project_renamed), Toast.LENGTH_SHORT).show()
-                    loadContents(currentPath) // Refresh list
+                    loadContents(currentPath)
                 }
             }
 
-            override fun onError() {
+            override fun onError(message: String) {
                 runOnUiThread {
                     Toast.makeText(applicationContext, getString(R.string.failed_to_rename_project), Toast.LENGTH_SHORT).show()
                 }
@@ -132,15 +129,15 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun deleteProject(item: FileSystemItem) {
-        repository.deleteProject(item, object : ProjectRepository.Callback {
+        ApiClient.deleteProject(this, item, object : ApiClient.SimpleCallback {
             override fun onSuccess() {
                 runOnUiThread {
                     Toast.makeText(applicationContext, getString(R.string.project_deleted), Toast.LENGTH_SHORT).show()
-                    loadContents(currentPath) // Refresh list
+                    loadContents(currentPath)
                 }
             }
 
-            override fun onError() {
+            override fun onError(message: String) {
                 runOnUiThread {
                     Toast.makeText(applicationContext, getString(R.string.failed_to_delete_project), Toast.LENGTH_SHORT).show()
                 }
@@ -149,17 +146,17 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun loadContents(path: String) {
-        repository.getContents(path, object : ProjectRepository.FileSystemItemsCallback {
-            override fun onSuccess(items: List<FileSystemItem>) {
+        ApiClient.getContents(this, path, object : ApiClient.ApiCallback<List<FileSystemItem>> {
+            override fun onSuccess(result: List<FileSystemItem>) {
                 runOnUiThread {
-                    projectsAdapter.updateItems(items)
+                    projectsAdapter.updateItems(result)
                     updateBreadcrumb()
                 }
             }
 
-            override fun onError() {
+            override fun onError(message: String) {
                 runOnUiThread {
-                    Toast.makeText(applicationContext, getString(R.string.failed_to_load_contents), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
                 }
             }
         })

@@ -11,13 +11,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.delay
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.io.IOException
 
 class UploadWorker(context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
@@ -61,20 +56,6 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
         }
 
         val dao = AppDatabase.getDatabase(applicationContext).uploadTaskDao()
-        val prefs = applicationContext.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val ip = prefs.getString("server_ip", null)
-
-        if (ip.isNullOrBlank()) {
-            Log.e(TAG, "Server IP is not configured. Work failed.")
-            return Result.failure()
-        }
-
-        val baseUrl = "http://$ip:5000"
-        val client = OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build()
 
         var allUploadsSuccessful = true
 
@@ -85,20 +66,24 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
             dao.update(task)
             Log.d(TAG, "Processing task ${task.id} for project ${task.projectName}. Status: Uploading")
 
-            val success = uploadTask(task, client, baseUrl)
+            val result = ApiClient.uploadPhoto(applicationContext, task)
 
-            if (success) {
+            if (result.isSuccess) {
                 Log.i(TAG, "Successfully uploaded task ${task.id}. Deleting task and file.")
                 dao.delete(task)
-                // Add a small delay to give the UI time to remove the item
-                // before the file is deleted, preventing Coil from trying to load a non-existent file.
                 delay(500)
                 File(task.imagePath).delete()
             } else {
-                task.status = "Fallido"
-                dao.update(task)
-                Log.e(TAG, "Failed to upload task ${task.id}.")
-                allUploadsSuccessful = false
+                val exception = result.exceptionOrNull()
+                if (exception is IOException && exception.message == "File not found") {
+                    Log.e(TAG, "File for task ${task.id} not found. Deleting task.")
+                    dao.delete(task)
+                } else {
+                    task.status = "Fallido"
+                    dao.update(task)
+                    Log.e(TAG, "Failed to upload task ${task.id}: ${exception?.message}")
+                    allUploadsSuccessful = false
+                }
             }
         }
 
@@ -108,31 +93,6 @@ class UploadWorker(context: Context, workerParams: WorkerParameters) :
         } else {
             Log.w(TAG, "One or more tasks failed. Will retry later.")
             Result.retry()
-        }
-    }
-
-    private fun uploadTask(task: UploadTask, client: OkHttpClient, baseUrl: String): Boolean {
-        return try {
-            val file = File(task.imagePath)
-            if (!file.exists()) return true
-
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("project_name", task.projectName)
-                .addFormDataPart("uuid", task.uuid)
-                .addFormDataPart("file", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
-                .build()
-
-            val request = Request.Builder().url("$baseUrl/upload").post(requestBody).build()
-            val response = client.newCall(request).execute()
-
-            Log.d(TAG, "Task ${task.id} - Server response: ${response.code}")
-            response.isSuccessful
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during uploadTask for task ${task.id}: ${e.message}")
-            e.printStackTrace()
-            false
         }
     }
 }

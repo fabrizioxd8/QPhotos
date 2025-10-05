@@ -39,10 +39,11 @@
     <string name="upload_from_gallery_description">Subir desde Galería</string>
     <string name="rename">Renombrar</string>
     <string name="rename_project">Renombrar Proyecto</string>
-    <string name="are_you_sure_you_want_to_delete">¿Estás seguro de que quieres eliminar \'%s\'?</string>
+    <string name="are_you_sure_you_want_to_delete">"¿Estás seguro de que quieres eliminar '%s'?"</string>
     <string name="project_renamed">Proyecto renombrado</string>
     <string name="failed_to_rename_project">Error al renombrar el proyecto</string>
     <string name="delete_project">Eliminar Proyecto</string>
     <string name="project_deleted">Proyecto eliminado</string>
     <string name="failed_to_delete_project">Error al eliminar el proyecto</string>
+    <string name="empty_folder">Esta carpeta está vacía.</string>
 </resources>

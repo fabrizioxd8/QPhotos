@@ -1,3 +1,11 @@
+"""
+QPhotos - Backend Server
+
+This Flask-based server provides the backend functionality for the QPhotos Android application.
+It handles file uploads, project management, and serves images and thumbnails.
+The server organizes photos into a hierarchical structure based on month, project, and date.
+"""
+
 from flask import Flask, request, jsonify, send_from_directory, send_file
 import os
 from datetime import datetime
@@ -5,46 +13,74 @@ from PIL import Image, ImageDraw, ImageFont
 import threading
 import io
 import shutil
+import re
 
 app = Flask(__name__)
 
 # --- Configuration ---
+# The root folder where all uploaded images will be stored.
 UPLOAD_FOLDER = 'upload'
+# A simple text file to remember the last used project name for user convenience.
 LAST_PROJECT_FILE = 'last_project.txt'
+# Spanish month names for creating human-readable folder names.
 MESES = (
     "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
     "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
 )
 
+# A lock to ensure thread-safe file processing, preventing race conditions
+# when multiple uploads happen at the exact same time.
 file_processing_lock = threading.Lock()
 
+# --- Initialization ---
+# Create the main upload folder if it doesn't exist on startup.
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# --- Helper Functions ---
+
+def is_date_folder(name):
+    """Checks if a string matches the YYYY-MM-DD format."""
+    return re.match(r'^\d{4}-\d{2}-\d{2}$', name) is not None
+
 def add_watermark(image_data, text):
+    """
+    Adds a text watermark with a semi-transparent background to an image.
+
+    Args:
+        image_data (bytes): The raw byte data of the image.
+        text (str): The text to be used for the watermark.
+
+    Returns:
+        Image: A new Pillow Image object with the watermark, or None on failure.
+    """
     try:
         img = Image.open(io.BytesIO(image_data)).convert("RGBA")
         text_layer = Image.new("RGBA", img.size, (255, 255, 255, 0))
         draw = ImageDraw.Draw(text_layer)
 
         try:
+            # Attempt to use Arial font for a cleaner look.
             font = ImageFont.truetype("arial.ttf", size=40)
         except IOError:
+            # Fallback to the default font if Arial is not available on the system.
             print("ADVERTENCIA: No se pudo cargar la fuente 'arial.ttf'. Usando fuente por defecto.")
             font = ImageFont.load_default()
 
+        # Calculate text size and position to place it in the bottom-right corner.
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
-
         width, height = img.size
         x = width - text_width - 20
         y = height - text_height - 20
 
+        # Draw the semi-transparent background rectangle and the text.
         rect_coords = (x - 10, y - 10, x + text_width + 10, y + text_height + 10)
-        draw.rectangle(rect_coords, fill=(0, 0, 0, 102))
-        draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+        draw.rectangle(rect_coords, fill=(0, 0, 0, 102))  # Black with ~40% opacity
+        draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))  # White text
 
+        # Composite the text layer onto the original image.
         out = Image.alpha_composite(img, text_layer)
         return out.convert("RGB")
 
@@ -52,8 +88,15 @@ def add_watermark(image_data, text):
         print(f"Error adding watermark: {e}")
         return None
 
+# --- API Endpoints ---
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    """
+    Handles file uploads from the Android app.
+    It expects a multipart form with 'file', 'project_name', and 'uuid'.
+    The server saves the image with a watermark in the correct project folder.
+    """
     with file_processing_lock:
         uuid = request.form.get('uuid')
         if not uuid:
@@ -69,6 +112,7 @@ def upload_file():
             return jsonify({"error": "Missing file or project name"}), 400
 
         try:
+            # Create the directory structure: /upload/05 MAYO/Project Name/2024-05-21/
             now = datetime.now()
             today_folder = now.strftime("%Y-%m-%d")
             month_num = now.month
@@ -78,9 +122,11 @@ def upload_file():
             project_path = os.path.join(UPLOAD_FOLDER, month_folder, project_name, today_folder)
             os.makedirs(project_path, exist_ok=True)
 
+            # Use UUID as filename to prevent duplicates and simplify client-side logic.
             filename = f"{uuid}.jpg"
             final_path = os.path.join(project_path, filename)
 
+            # Idempotency check: if the file already exists, do nothing.
             if os.path.exists(final_path):
                 print(f"Duplicate upload detected for UUID {uuid}. Ignoring.")
                 return jsonify({"success": "Duplicate ignored."}), 200
@@ -90,8 +136,9 @@ def upload_file():
             watermarked_image = add_watermark(image_data, watermark_text)
 
             if watermarked_image:
-                watermarked_image.save(final_path)
+                watermarked_image.save(final_path, 'JPEG', quality=95)
 
+                # Update the last used project name for convenience in the app.
                 with open(LAST_PROJECT_FILE, 'w') as f:
                     f.write(project_name)
 
@@ -106,6 +153,12 @@ def upload_file():
 
 @app.route('/project/<month>/<name>', methods=['PUT', 'DELETE'])
 def manage_project(month, name):
+    """
+    Manages projects. Allows renaming (PUT) and deleting (DELETE).
+    
+    - PUT: Expects a JSON body with {"new_name": "New Project Name"}.
+    - DELETE: Removes the entire project folder.
+    """
     if request.method == 'PUT':
         try:
             new_name = request.json.get('new_name', '').strip()
@@ -133,7 +186,7 @@ def manage_project(month, name):
             if not os.path.isdir(project_path):
                 return jsonify({"error": "Project not found"}), 404
 
-            shutil.rmtree(project_path)
+            shutil.rmtree(project_path)  # Recursively delete the project folder
             print(f"Successfully deleted project: {project_path}")
             return jsonify({"success": f"Project '{name}' deleted."}), 200
 
@@ -143,65 +196,112 @@ def manage_project(month, name):
 
 @app.route('/last-project', methods=['GET'])
 def get_last_project():
+    """Retrieves the last successfully used project name."""
     try:
         if os.path.exists(LAST_PROJECT_FILE):
             with open(LAST_PROJECT_FILE, 'r') as f:
                 last_project = f.read().strip()
             return jsonify({"last_project": last_project})
         else:
+            # If the file doesn't exist, return an empty string.
             return jsonify({"last_project": ""})
     except Exception as e:
         print(f"Error reading last project file: {e}")
         return jsonify({"error": "Could not read last project file"}), 500
 
-@app.route('/projects', methods=['GET'])
-def list_projects():
-    projects_data = []
+@app.route('/projects_current_month', methods=['GET'])
+def list_projects_current_month():
+    """Returns a sorted list of all project names from the current month."""
     try:
-        upload_path = UPLOAD_FOLDER
         now = datetime.now()
         month_num = now.month
         month_name = MESES[month_num - 1]
         current_month_folder = f"{month_num:02d} {month_name}"
+        month_path = os.path.join(UPLOAD_FOLDER, current_month_folder)
 
-        month_path = os.path.join(upload_path, current_month_folder)
+        if not os.path.isdir(month_path):
+            return jsonify([])  # Return empty list if month folder doesn't exist.
 
-        if os.path.isdir(month_path):
-            project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
-            for project in project_folders:
-                projects_data.append({"month": current_month_folder, "name": project})
-
-        return jsonify(projects_data)
+        project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
+        project_folders.sort()
+        return jsonify(project_folders)
     except Exception as e:
         print(f"Error listing projects for current month: {e}")
-        return jsonify({"error": "Could not list projects"}), 500
+        return jsonify({"error": "Could not list projects for current month"}), 500
 
-@app.route('/photos/<month>/<project>', methods=['GET'])
-def list_photos(month, project):
-    photos_by_date = {}
+@app.route('/browse/', defaults={'path': ''})
+@app.route('/browse/<path:path>')
+def browse(path):
+    """
+    Acts as a file explorer for the upload folder.
+    It returns a list of items (months, projects, days, photos) based on the provided path.
+    """
+    base_path = UPLOAD_FOLDER
+    # Prevent directory traversal attacks by normalizing and checking the path.
+    safe_path = os.path.normpath(os.path.join(base_path, path))
+    base_path_abs = os.path.abspath(base_path)
+    safe_path_abs = os.path.abspath(safe_path)
+
+    if not safe_path_abs.startswith(base_path_abs) or not os.path.exists(safe_path_abs):
+        return jsonify({"error": "Path not found or forbidden"}), 404
+
+    items = []
     try:
-        project_dir = os.path.join(UPLOAD_FOLDER, month, project)
-        date_folders = [d for d in os.listdir(project_dir) if os.path.isdir(os.path.join(project_dir, d))]
-        for date_folder in sorted(date_folders, reverse=True):
-            date_photo_urls = []
-            photos_path = os.path.join(project_dir, date_folder)
-            photos = [f for f in os.listdir(photos_path) if f.endswith('.jpg')]
-            for photo in sorted(photos, reverse=True):
-                url = f"uploads/{month}/{project}/{date_folder}/{photo}"
-                date_photo_urls.append(url)
-            if date_photo_urls:
-                photos_by_date[date_folder] = date_photo_urls
-        return jsonify(photos_by_date)
+        path_parts = [part for part in path.split('/') if part]
+        depth = len(path_parts)
+        # Check if we are inside a folder whose name is a date (e.g., '2024-05-21')
+        is_browsing_date_folder = path and is_date_folder(path_parts[-1])
+
+        dir_contents = os.listdir(safe_path_abs)
+
+        # Sort month folders in reverse chronological order (newest first).
+        # Sort all other folder contents alphabetically.
+        if depth == 0:
+            dir_contents.sort(reverse=True)
+        else:
+            dir_contents.sort()
+
+        for entry_name in dir_contents:
+            full_path_to_entry = os.path.join(safe_path_abs, entry_name)
+            relative_path = os.path.relpath(full_path_to_entry, base_path_abs).replace(os.sep, '/')
+
+            if os.path.isdir(full_path_to_entry):
+                item_type = "project"  # Default type
+                if depth == 0:
+                    item_type = "month"
+                elif is_date_folder(entry_name):
+                    item_type = "day"
+
+                items.append({
+                    "name": entry_name,
+                    "path": relative_path,
+                    "type": item_type
+                })
+            # Only show image files if we are inside a date-formatted folder.
+            elif is_browsing_date_folder and entry_name.lower().endswith(('.jpg', '.jpeg')):
+                items.append({
+                    "name": entry_name,
+                    "path": relative_path,
+                    "type": "photo"
+                })
+
+        return jsonify(items)
     except Exception as e:
-        print(f"Error listing photos for project {project}: {e}")
-        return jsonify({"error": "Could not list photos"}), 500
+        print(f"Error browsing path '{path}': {e}")
+        return jsonify({"error": "Could not browse path"}), 500
+
 
 @app.route('/uploads/<path:filepath>')
 def serve_photo(filepath):
+    """Serves a full-resolution photo from the filesystem."""
     return send_from_directory(UPLOAD_FOLDER, filepath)
 
 @app.route('/thumbnail/<path:filepath>')
 def serve_thumbnail(filepath):
+    """
+    Generates and serves a 400x400 thumbnail of a photo on-the-fly.
+    This avoids needing to store separate thumbnail files.
+    """
     try:
         image_path = os.path.join(UPLOAD_FOLDER, filepath)
 
@@ -211,6 +311,7 @@ def serve_thumbnail(filepath):
         img = Image.open(image_path)
         img.thumbnail((400, 400))
 
+        # Save the thumbnail to a byte stream in memory to avoid writing to disk.
         img_io = io.BytesIO()
         img.save(img_io, 'JPEG', quality=85)
         img_io.seek(0)
@@ -223,11 +324,12 @@ def serve_thumbnail(filepath):
 
 @app.route('/photo/<path:filepath>', methods=['DELETE'])
 def delete_photo(filepath):
+    """Deletes a single photo from the filesystem."""
     with file_processing_lock:
         try:
-            # We construct the full path relative to the script's location
+            # Construct a safe, absolute path to the file.
             photo_path = os.path.join(os.getcwd(), UPLOAD_FOLDER, filepath)
-            photo_path = os.path.normpath(photo_path) # Clean up the path
+            photo_path = os.path.normpath(photo_path)
 
             if not os.path.exists(photo_path):
                 return jsonify({"error": "Photo not found"}), 404
@@ -241,6 +343,8 @@ def delete_photo(filepath):
             return jsonify({"error": "Could not delete photo"}), 500
 
 if __name__ == '__main__':
+    # Use waitress as a production-ready WSGI server instead of Flask's default
+    # development server. It's more robust and suitable for this use case.
     from waitress import serve
     print("Servidor de producción iniciado en http://0.0.0.0:5000")
     serve(app, host='0.0.0.0', port=5000, threads=8)

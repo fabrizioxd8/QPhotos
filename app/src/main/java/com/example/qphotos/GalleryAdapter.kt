@@ -4,13 +4,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 
 class GalleryAdapter(
-    private val photoUrls: List<String>,
-    private val onPhotoClick: (Int) -> Unit
-) : RecyclerView.Adapter<GalleryAdapter.PhotoViewHolder>() {
+    private val onPhotoClick: (String) -> Unit
+) : ListAdapter<String, GalleryAdapter.PhotoViewHolder>(PhotoDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -19,26 +20,32 @@ class GalleryAdapter(
     }
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
-        val photoUrl = photoUrls[position]
+        val photoUrl = getItem(position)
         holder.bind(photoUrl)
         holder.itemView.setOnClickListener {
-            onPhotoClick(position)
+            onPhotoClick(photoUrl)
         }
     }
-
-    override fun getItemCount(): Int = photoUrls.size
 
     class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val imageView: ImageView = itemView.findViewById(R.id.photoImageView)
 
         fun bind(photoUrl: String) {
-            val prefs = itemView.context.getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
-            val ip = prefs.getString("server_ip", null)
-            val fullUrl = "http://$ip:5000/thumbnail/$photoUrl"
+            val fullUrl = ApiClient.getThumbnailUrl(itemView.context, photoUrl)
             imageView.load(fullUrl) {
                 crossfade(true)
-                placeholder(R.drawable.ic_folder) // Optional: add a placeholder drawable
+                placeholder(R.drawable.ic_folder)
             }
         }
+    }
+}
+
+class PhotoDiffCallback : DiffUtil.ItemCallback<String>() {
+    override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
+        return oldItem == newItem
+    }
+
+    override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+        return oldItem == newItem
     }
 }
