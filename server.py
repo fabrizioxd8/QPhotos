@@ -6,7 +6,7 @@ It handles file uploads, project management, and serves images and thumbnails.
 The server organizes photos into a hierarchical structure based on month, project, and date.
 """
 
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_from_directory, send_file, make_response
 import os
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
@@ -256,24 +256,47 @@ def browse(path):
 
 @app.route('/uploads/<path:filepath>')
 def serve_photo(filepath):
-    """Serves a full-resolution photo from the filesystem."""
-    return send_from_directory(UPLOAD_FOLDER, filepath)
+    """Serves a full-resolution photo from the filesystem with caching headers."""
+    response = make_response(send_from_directory(UPLOAD_FOLDER, filepath))
+    response.headers['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+    return response
 
 @app.route('/thumbnail/<path:filepath>')
 def serve_thumbnail(filepath):
     """
-    Generates and serves a 400x400 thumbnail of a photo on-the-fly.
+    Generates and serves a 400x400 thumbnail of a photo on-the-fly with caching.
     """
     try:
         image_path = os.path.join(UPLOAD_FOLDER, filepath)
         if not os.path.exists(image_path):
             return "File not found", 404
+            
+        # Create thumbnail cache directory
+        cache_dir = os.path.join(UPLOAD_FOLDER, '.thumbnails')
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        # Generate cache filename
+        cache_filename = filepath.replace('/', '_').replace('\\', '_') + '_thumb.jpg'
+        cache_path = os.path.join(cache_dir, cache_filename)
+        
+        # Check if cached thumbnail exists and is newer than original
+        if os.path.exists(cache_path):
+            if os.path.getmtime(cache_path) >= os.path.getmtime(image_path):
+                response = make_response(send_file(cache_path, mimetype='image/jpeg'))
+                response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+                return response
+        
+        # Generate new thumbnail
         img = Image.open(image_path)
-        img.thumbnail((400, 400))
-        img_io = io.BytesIO()
-        img.save(img_io, 'JPEG', quality=85)
-        img_io.seek(0)
-        return send_file(img_io, mimetype='image/jpeg')
+        img.thumbnail((400, 400), Image.Resampling.LANCZOS)
+        
+        # Save to cache
+        img.save(cache_path, 'JPEG', quality=85, optimize=True)
+        
+        # Serve from cache with caching headers
+        response = make_response(send_file(cache_path, mimetype='image/jpeg'))
+        response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+        return response
     except Exception as e:
         print(f"Error creating thumbnail for {filepath}: {e}")
         return "Error", 500

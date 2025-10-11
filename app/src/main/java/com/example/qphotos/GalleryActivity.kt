@@ -10,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import coil.request.CachePolicy
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.stfalcon.imageviewer.StfalconImageViewer
 import com.stfalcon.imageviewer.loader.ImageLoader as StfalconImageLoader
@@ -43,7 +44,12 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
     override fun loadImage(imageView: ImageView, imageUrl: String) {
         val fullUrl = ApiClient.getUploadUrl(this, imageUrl)
         imageView.load(fullUrl) {
-            crossfade(true)
+            crossfade(300)
+            memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+            diskCachePolicy(coil.request.CachePolicy.ENABLED)
+            networkCachePolicy(coil.request.CachePolicy.ENABLED)
+            // Use a reasonable max size to avoid loading huge images
+            size(1920, 1920)
         }
     }
 
@@ -55,7 +61,17 @@ class GalleryActivity : AppCompatActivity(), StfalconImageLoader<String> {
             }
         }
         photosRecyclerView.adapter = galleryAdapter
-        photosRecyclerView.layoutManager = GridLayoutManager(this, 3)
+        
+        val layoutManager = GridLayoutManager(this, 3)
+        photosRecyclerView.layoutManager = layoutManager
+        
+        // Enable item prefetching for smoother scrolling
+        layoutManager.isItemPrefetchEnabled = true
+        layoutManager.initialPrefetchItemCount = 6
+        
+        // Optimize RecyclerView performance
+        photosRecyclerView.setHasFixedSize(true)
+        photosRecyclerView.setItemViewCacheSize(20)
     }
 
     private fun showPhotoViewer(startPosition: Int) {

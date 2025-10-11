@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import coil.request.CachePolicy
 
 class GalleryAdapter(
     private val onPhotoClick: (String) -> Unit
@@ -33,8 +34,13 @@ class GalleryAdapter(
         fun bind(photoUrl: String) {
             val fullUrl = ApiClient.getThumbnailUrl(itemView.context, photoUrl)
             imageView.load(fullUrl) {
-                crossfade(true)
+                crossfade(300)
                 placeholder(R.drawable.ic_folder)
+                error(R.drawable.ic_folder)
+                memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                size(400, 400) // Match server thumbnail size
             }
         }
     }

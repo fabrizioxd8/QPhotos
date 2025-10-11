@@ -15,7 +15,12 @@ import java.io.IOException
 
 object ApiClient {
 
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectionPool(ConnectionPool(10, 5, java.util.concurrent.TimeUnit.MINUTES))
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     private fun getBaseUrl(context: Context): String? {
