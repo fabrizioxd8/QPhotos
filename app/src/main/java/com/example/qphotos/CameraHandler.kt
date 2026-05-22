@@ -1,7 +1,10 @@
 package com.example.qphotos
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
 import android.media.MediaActionSound
 import android.os.Build
 import android.os.Environment
@@ -22,7 +25,7 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class CameraHandler(private val activity: AppCompatActivity, private val onPhotoCaptured: (File) -> Unit) {
+class CameraHandler(private val activity: AppCompatActivity, private val onPhotoCaptured: (File, Location?) -> Unit) {
 
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
@@ -32,9 +35,9 @@ class CameraHandler(private val activity: AppCompatActivity, private val onPhoto
     companion object {
         private const val TAG = "CameraHandler"
         val REQUIRED_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.CAMERA, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.POST_NOTIFICATIONS)
+            arrayOf(Manifest.permission.CAMERA, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
         } else {
-            arrayOf(Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE)
+            arrayOf(Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
         }
     }
 
@@ -58,6 +61,25 @@ class CameraHandler(private val activity: AppCompatActivity, private val onPhoto
         }, ContextCompat.getMainExecutor(activity))
     }
 
+    private fun getLastKnownLocation(): Location? {
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val locationManager = activity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val providers = locationManager.getProviders(true)
+            var bestLocation: Location? = null
+            for (provider in providers) {
+                val location = locationManager.getLastKnownLocation(provider)
+                if (location != null) {
+                    if (bestLocation == null || location.accuracy < bestLocation.accuracy) {
+                        bestLocation = location
+                    }
+                }
+            }
+            return bestLocation
+        }
+        return null
+    }
+
     fun takePhoto() {
         val imageCapture = imageCapture ?: return
 
@@ -79,7 +101,8 @@ class CameraHandler(private val activity: AppCompatActivity, private val onPhoto
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    onPhotoCaptured(photoFile)
+                    val location = getLastKnownLocation()
+                    onPhotoCaptured(photoFile, location)
                 }
             }
         )

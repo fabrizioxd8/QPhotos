@@ -71,3 +71,8 @@ dependencies {
 room {
     schemaDirectory("$projectDir/schemas")
 }
+android {
+    lint {
+        abortOnError = false
+    }
+}

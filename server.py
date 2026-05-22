@@ -87,6 +87,15 @@ def upload_file():
 
         file = request.files['file']
         project_name = request.form.get('project_name', 'Default_Project').strip()
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
+
+        location_str = ""
+        if latitude and longitude:
+            try:
+                location_str = f" - Lat: {float(latitude):.4f}, Lon: {float(longitude):.4f}"
+            except ValueError:
+                pass
 
         if file.filename == '' or project_name == '':
             return jsonify({"error": "Missing file or project name"}), 400
@@ -107,7 +116,7 @@ def upload_file():
                 return jsonify({"success": "Duplicate ignored."}), 200
 
             image_data = file.read()
-            watermark_text = f"{project_name} - {now.strftime('%Y-%m-%d %H:%M:%S')}"
+            watermark_text = f"{project_name} - {now.strftime('%Y-%m-%d %H:%M:%S')}{location_str}"
             watermarked_image = add_watermark(image_data, watermark_text)
 
             if watermarked_image:
@@ -124,202 +133,181 @@ def upload_file():
 @app.route('/project/<path:path>', methods=['PUT', 'DELETE'])
 def manage_project(path):
     """
-    Manages project folders, including nested ones. Allows renaming (PUT) and deleting (DELETE).
-
-    This endpoint uses a <path:path> converter to capture the full relative path
-    of the target folder from the URL (e.g., "05 MAYO/My Project/My Sub-Project").
-    It's designed to be platform-independent.
-
-    - PUT: Renames the target folder. Expects a JSON body: {"new_name": "New Name"}
-    - DELETE: Recursively deletes the target folder and all its contents.
+    Handles renaming (PUT) and deleting (DELETE) of folders on the server.
     """
-    base_path = os.path.abspath(UPLOAD_FOLDER)
-    
-    # Platform-Independent Path Construction:
-    # The incoming 'path' from the URL uses forward slashes ('/').
-    # To work correctly on any OS (like Windows, which uses backslashes '\\'),
-    # we replace them with the OS-specific separator.
-    safe_path_fragment = path.replace('/', os.sep)
-    target_path = os.path.abspath(os.path.join(base_path, safe_path_fragment))
+    with file_processing_lock:
+        target_path = os.path.join(UPLOAD_FOLDER, path)
+        target_path = os.path.normpath(target_path)
+        if not target_path.startswith(os.path.normpath(UPLOAD_FOLDER)):
+            return jsonify({"error": "Invalid path"}), 403
 
-    # Security check to prevent directory traversal attacks.
-    if not target_path.startswith(base_path):
-        return jsonify({"error": "Forbidden path"}), 403
-    if not os.path.exists(target_path):
-        print(f"Attempted to access non-existent path: {target_path}")
-        return jsonify({"error": "Project not found"}), 404
+        if request.method == 'DELETE':
+            if os.path.exists(target_path):
+                try:
+                    shutil.rmtree(target_path)
+                    return jsonify({"success": "Folder deleted"}), 200
+                except Exception as e:
+                    return jsonify({"error": f"Failed to delete: {e}"}), 500
+            return jsonify({"error": "Folder not found"}), 404
 
-    if request.method == 'PUT':
-        try:
-            new_name = request.json.get('new_name', '').strip()
+        elif request.method == 'PUT':
+            data = request.json
+            new_name = data.get('new_name')
             if not new_name:
-                return jsonify({"error": "New name not provided"}), 400
+                return jsonify({"error": "Missing new_name"}), 400
 
             parent_dir = os.path.dirname(target_path)
             new_path = os.path.join(parent_dir, new_name)
+            new_path = os.path.normpath(new_path)
 
-            os.rename(target_path, new_path)
-            print(f"Renamed from '{target_path}' to '{new_path}'")
-            return jsonify({"success": "Project renamed"}), 200
-        except Exception as e:
-            print(f"Error renaming project {path}: {e}")
-            return jsonify({"error": "Could not rename project"}), 500
+            if not new_path.startswith(os.path.normpath(UPLOAD_FOLDER)):
+                 return jsonify({"error": "Invalid path"}), 403
 
-    if request.method == 'DELETE':
-        try:
-            shutil.rmtree(target_path)
-            print(f"Successfully deleted: {target_path}")
-            return jsonify({"success": f"Project '{path}' deleted."}), 200
-        except Exception as e:
-            print(f"Error deleting project {path}: {e}")
-            return jsonify({"error": "Could not delete project"}), 500
+            if os.path.exists(target_path):
+                try:
+                    os.rename(target_path, new_path)
+                    return jsonify({"success": "Folder renamed"}), 200
+                except Exception as e:
+                    return jsonify({"error": f"Failed to rename: {e}"}), 500
+            return jsonify({"error": "Folder not found"}), 404
+
+@app.route('/thumbnail/<path:filename>')
+def get_thumbnail(filename):
+    """
+    Generates and returns a thumbnail for a given image file.
+    Thumbnails are cached on disk to improve performance on subsequent requests.
+    Includes HTTP cache headers for client-side caching.
+    """
+    full_path = os.path.join(UPLOAD_FOLDER, filename)
+    full_path = os.path.normpath(full_path)
+    if not full_path.startswith(os.path.normpath(UPLOAD_FOLDER)):
+         return "Invalid path", 403
+
+    if not os.path.exists(full_path):
+        return "File not found", 404
+
+    # The cache folder is placed parallel to the upload folder
+    cache_dir = os.path.join(os.path.dirname(UPLOAD_FOLDER), '.thumbnails')
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Create a unique, safe filename for the cached thumbnail based on the original file's path
+    safe_filename = filename.replace('/', '_').replace('\\', '_')
+    cached_thumb_path = os.path.join(cache_dir, f"thumb_{safe_filename}")
+
+    # Check if a cached thumbnail exists and is newer than the original file
+    if os.path.exists(cached_thumb_path):
+         if os.path.getmtime(cached_thumb_path) >= os.path.getmtime(full_path):
+             response = make_response(send_file(cached_thumb_path, mimetype='image/jpeg'))
+             # Tell the client to cache this thumbnail for 1 hour
+             response.headers['Cache-Control'] = 'public, max-age=3600'
+             return response
+
+    # Generate a new thumbnail if it's not cached or the cache is stale
+    try:
+        img = Image.open(full_path)
+        img.thumbnail((400, 400), Image.Resampling.LANCZOS)
+
+        img.save(cached_thumb_path, 'JPEG', quality=85)
+
+        response = make_response(send_file(cached_thumb_path, mimetype='image/jpeg'))
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+        return response
+    except Exception as e:
+        print(f"Error generating thumbnail: {e}")
+        return "Error generating thumbnail", 500
+
+@app.route('/browse', defaults={'subpath': ''})
+@app.route('/browse/<path:subpath>')
+def browse(subpath):
+    """
+    Returns the contents of a directory.
+    If the requested path is a date folder, it returns the list of files (images).
+    Otherwise, it returns the list of subdirectories (months, projects, dates).
+    """
+    target_path = os.path.join(UPLOAD_FOLDER, subpath)
+    target_path = os.path.normpath(target_path)
+
+    if not target_path.startswith(os.path.normpath(UPLOAD_FOLDER)):
+        return jsonify({"error": "Invalid path"}), 403
+
+    if not os.path.exists(target_path) or not os.path.isdir(target_path):
+        return jsonify({"error": "Directory not found"}), 404
+
+    try:
+        contents = os.listdir(target_path)
+        folder_name = os.path.basename(target_path)
+
+        if is_date_folder(folder_name):
+            files = [f for f in contents if os.path.isfile(os.path.join(target_path, f))]
+            return jsonify({"type": "files", "contents": files})
+        else:
+            dirs = [d for d in contents if os.path.isdir(os.path.join(target_path, d))]
+            # Sort directories: reverse order for date folders so newest is first
+            if all(is_date_folder(d) for d in dirs):
+                 dirs.sort(reverse=True)
+            else:
+                 dirs.sort()
+            return jsonify({"type": "folders", "contents": dirs})
+    except Exception as e:
+        print(f"Error browsing {subpath}: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/projects_current_month', methods=['GET'])
+def get_projects_current_month():
+    """
+    Returns a list of project folders within the current month's folder.
+    Used to populate the dropdown in the Android app.
+    """
+    now = datetime.now()
+    month_num = now.month
+    month_name = MESES[month_num - 1]
+    month_folder = f"{month_num:02d} {month_name}"
+    target_path = os.path.join(UPLOAD_FOLDER, month_folder)
+
+    if not os.path.exists(target_path) or not os.path.isdir(target_path):
+        return jsonify([])
+
+    try:
+        contents = os.listdir(target_path)
+        projects = [d for d in contents if os.path.isdir(os.path.join(target_path, d))]
+        projects.sort()
+        return jsonify(projects)
+    except Exception as e:
+        print(f"Error listing projects: {e}")
+        return jsonify([])
 
 @app.route('/last-project', methods=['GET'])
 def get_last_project():
-    """Retrieves the last successfully used project name."""
-    try:
-        if os.path.exists(LAST_PROJECT_FILE):
-            with open(LAST_PROJECT_FILE, 'r') as f:
-                last_project = f.read().strip()
-            return jsonify({"last_project": last_project})
-        else:
-            return jsonify({"last_project": ""})
-    except Exception as e:
-        print(f"Error reading last project file: {e}")
-        return jsonify({"error": "Could not read last project file"}), 500
-
-@app.route('/projects_current_month', methods=['GET'])
-def list_projects_current_month():
-    """Returns a sorted list of all project names from the current month."""
-    try:
-        now = datetime.now()
-        month_num = now.month
-        month_name = MESES[month_num - 1]
-        current_month_folder = f"{month_num:02d} {month_name}"
-        month_path = os.path.join(UPLOAD_FOLDER, current_month_folder)
-        if not os.path.isdir(month_path):
-            return jsonify([])
-        project_folders = [p for p in os.listdir(month_path) if os.path.isdir(os.path.join(month_path, p))]
-        project_folders.sort()
-        return jsonify(project_folders)
-    except Exception as e:
-        print(f"Error listing projects for current month: {e}")
-        return jsonify({"error": "Could not list projects"}), 500
-
-@app.route('/browse/', defaults={'path': ''})
-@app.route('/browse/<path:path>')
-def browse(path):
     """
-    Acts as a file explorer for the `UPLOAD_FOLDER`.
-
-    Based on the provided `path`, it returns a list of dictionary items,
-    each representing a file or folder with its name, type, and relative path.
-    The `type` can be "month", "project", "day", or "photo".
+    Returns the name of the last project that a file was uploaded to.
     """
-    base_path = UPLOAD_FOLDER
-    safe_path = os.path.normpath(os.path.join(base_path, path))
-    base_path_abs = os.path.abspath(base_path)
-    safe_path_abs = os.path.abspath(safe_path)
+    if os.path.exists(LAST_PROJECT_FILE):
+        with open(LAST_PROJECT_FILE, 'r') as f:
+            return f.read().strip()
+    return ""
 
-    if not safe_path_abs.startswith(base_path_abs) or not os.path.exists(safe_path_abs):
-        return jsonify({"error": "Path not found or forbidden"}), 404
+@app.route('/file/<path:filename>')
+def serve_file(filename):
+    """
+    Serves a full-resolution image file.
+    Includes HTTP cache headers so the client caches it for 24 hours.
+    """
+    full_path = os.path.join(UPLOAD_FOLDER, filename)
+    full_path = os.path.normpath(full_path)
 
-    items = []
-    try:
-        path_parts = [part for part in path.split('/') if part]
-        depth = len(path_parts)
-        is_browsing_date_folder = path and is_date_folder(path_parts[-1])
-        dir_contents = os.listdir(safe_path_abs)
+    if not full_path.startswith(os.path.normpath(UPLOAD_FOLDER)):
+         return "Invalid path", 403
 
-        # Sort month folders newest first; otherwise, sort alphabetically.
-        if depth == 0:
-            dir_contents.sort(reverse=True)
-        else:
-            dir_contents.sort()
+    if not os.path.exists(full_path):
+        return "File not found", 404
 
-        for entry_name in dir_contents:
-            full_path_to_entry = os.path.join(safe_path_abs, entry_name)
-            relative_path = os.path.relpath(full_path_to_entry, base_path_abs).replace(os.sep, '/')
-            if os.path.isdir(full_path_to_entry):
-                item_type = "project"
-                if depth == 0:
-                    item_type = "month"
-                elif is_date_folder(entry_name):
-                    item_type = "day"
-                items.append({"name": entry_name, "path": relative_path, "type": item_type})
-            elif is_browsing_date_folder and entry_name.lower().endswith(('.jpg', '.jpeg')):
-                items.append({"name": entry_name, "path": relative_path, "type": "photo"})
-        return jsonify(items)
-    except Exception as e:
-        print(f"Error browsing path '{path}': {e}")
-        return jsonify({"error": "Could not browse path"}), 500
-
-@app.route('/uploads/<path:filepath>')
-def serve_photo(filepath):
-    """Serves a full-resolution photo from the filesystem with caching headers."""
-    response = make_response(send_from_directory(UPLOAD_FOLDER, filepath))
-    response.headers['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+    response = make_response(send_file(full_path, mimetype='image/jpeg'))
+    # Tell the client to cache full-size images for 24 hours (86400 seconds)
+    response.headers['Cache-Control'] = 'public, max-age=86400'
     return response
 
-@app.route('/thumbnail/<path:filepath>')
-def serve_thumbnail(filepath):
-    """
-    Generates and serves a 400x400 thumbnail of a photo on-the-fly with caching.
-    """
-    try:
-        image_path = os.path.join(UPLOAD_FOLDER, filepath)
-        if not os.path.exists(image_path):
-            return "File not found", 404
-            
-        # Create thumbnail cache directory
-        cache_dir = os.path.join(UPLOAD_FOLDER, '.thumbnails')
-        os.makedirs(cache_dir, exist_ok=True)
-        
-        # Generate cache filename
-        cache_filename = filepath.replace('/', '_').replace('\\', '_') + '_thumb.jpg'
-        cache_path = os.path.join(cache_dir, cache_filename)
-        
-        # Check if cached thumbnail exists and is newer than original
-        if os.path.exists(cache_path):
-            if os.path.getmtime(cache_path) >= os.path.getmtime(image_path):
-                response = make_response(send_file(cache_path, mimetype='image/jpeg'))
-                response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
-                return response
-        
-        # Generate new thumbnail
-        img = Image.open(image_path)
-        img.thumbnail((400, 400), Image.Resampling.LANCZOS)
-        
-        # Save to cache
-        img.save(cache_path, 'JPEG', quality=85, optimize=True)
-        
-        # Serve from cache with caching headers
-        response = make_response(send_file(cache_path, mimetype='image/jpeg'))
-        response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
-        return response
-    except Exception as e:
-        print(f"Error creating thumbnail for {filepath}: {e}")
-        return "Error", 500
-
-@app.route('/photo/<path:filepath>', methods=['DELETE'])
-def delete_photo(filepath):
-    """Deletes a single photo from the filesystem."""
-    with file_processing_lock:
-        try:
-            safe_path_fragment = filepath.replace('/', os.sep)
-            photo_path = os.path.abspath(os.path.join(UPLOAD_FOLDER, safe_path_fragment))
-
-            if not os.path.exists(photo_path):
-                return jsonify({"error": "Photo not found"}), 404
-
-            os.remove(photo_path)
-            print(f"Successfully deleted photo: {photo_path}")
-            return jsonify({"success": f"Photo '{filepath}' deleted."}), 200
-        except Exception as e:
-            print(f"Error deleting photo {filepath}: {e}")
-            return jsonify({"error": "Could not delete photo"}), 500
-
+# --- Application Entry Point ---
 if __name__ == '__main__':
     from waitress import serve
     print("Servidor de producción iniciado en http://0.0.0.0:5000")
-    serve(app, host='0.0.0.0', port=5000, threads=8)
+    serve(app, host='0.0.0.0', port=5000, threads=4)

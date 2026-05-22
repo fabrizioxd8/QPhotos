@@ -58,12 +58,17 @@ object ApiClient {
             return Result.failure(IOException("File not found"))
         }
 
-        val requestBody = MultipartBody.Builder()
+        val builder = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("file", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
             .addFormDataPart("project_name", task.projectName)
             .addFormDataPart("uuid", task.uuid)
-            .build()
+
+        if (task.latitude != null && task.longitude != null) {
+            builder.addFormDataPart("latitude", task.latitude.toString())
+            builder.addFormDataPart("longitude", task.longitude.toString())
+        }
+        val requestBody = builder.build()
 
         val request = Request.Builder().url(url).post(requestBody).build()
 

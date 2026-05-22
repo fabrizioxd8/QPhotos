@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.view.PreviewView
 import androidx.core.view.isVisible
@@ -78,9 +79,9 @@ class MainActivity : AppCompatActivity() {
         val settingsButton: ImageButton = findViewById(R.id.btnSettings)
         val viewProjectsButton: ImageButton = findViewById(R.id.view_projects_button)
 
-        cameraHandler = CameraHandler(this) { photoFile ->
+        cameraHandler = CameraHandler(this) { photoFile, location ->
             val projectName = actvNombreProyecto.text.toString().trim()
-            enqueueUploadTask(photoFile.absolutePath, projectName)
+            enqueueUploadTask(photoFile.absolutePath, projectName, location = location)
         }
 
         if (cameraHandler.allPermissionsGranted()) {
@@ -122,7 +123,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true) {
+    private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true, location: Location? = null) {
         var finalProjectName = projectName
         if (!finalProjectName.lowercase().startsWith("c.c. ")) {
             finalProjectName = "C.C. $finalProjectName"
@@ -132,7 +133,9 @@ class MainActivity : AppCompatActivity() {
             imagePath = photoPath,
             projectName = finalProjectName,
             status = "Pending",
-            uuid = UUID.randomUUID().toString()
+            uuid = UUID.randomUUID().toString(),
+            latitude = location?.latitude,
+            longitude = location?.longitude
         )
 
         lifecycleScope.launch {

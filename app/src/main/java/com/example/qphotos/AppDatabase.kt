@@ -1,11 +1,11 @@
-package com.example.qphotos // Change to your package name
+package com.example.qphotos
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [UploadTask::class], version = 2, exportSchema = false)
+@Database(entities = [UploadTask::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun uploadTaskDao(): UploadTaskDao

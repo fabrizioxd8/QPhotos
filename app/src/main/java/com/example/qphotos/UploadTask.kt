@@ -1,4 +1,4 @@
-package com.example.qphotos // Change to your package name
+package com.example.qphotos
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -9,5 +9,7 @@ data class UploadTask(
     val imagePath: String,
     val projectName: String,
     val uuid: String,
-    var status: String = "Pending"
+    var status: String = "Pending",
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
