@@ -24,6 +24,21 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.media.ExifInterface
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewFinder: PreviewView
@@ -53,10 +68,33 @@ class MainActivity : AppCompatActivity() {
                 projectName = "C.C. $projectName"
             }
 
-            for (uri in uris) {
-                val photoFile = copyUriToInternalStorage(uri, "GALLERY_${System.currentTimeMillis()}_${uris.indexOf(uri)}")
-                if (photoFile != null) {
-                    enqueueUploadTask(photoFile.absolutePath, projectName, showToast = false)
+            lifecycleScope.launch {
+                for (uri in uris) {
+                    val photoFile = copyUriToInternalStorage(uri, "GALLERY_${System.currentTimeMillis()}_${uris.indexOf(uri)}")
+                    if (photoFile != null) {
+                        var captureTime: String? = null
+                        var gpsCoords: String? = null
+                        var address: String? = null
+
+                        try {
+                            contentResolver.openInputStream(uri)?.use { inputStream ->
+                                val exif = ExifInterface(inputStream)
+                                captureTime = exif.getAttribute(ExifInterface.TAG_DATETIME)
+
+                                val latLong = FloatArray(2)
+                                if (exif.getLatLong(latLong)) {
+                                    val lat = latLong[0].toDouble()
+                                    val lon = latLong[1].toDouble()
+                                    gpsCoords = "$lat, $lon"
+                                    address = getAddressFromLocation(lat, lon)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+                        enqueueUploadTask(photoFile.absolutePath, projectName, showToast = false, captureTime, gpsCoords, address)
+                    }
                 }
             }
             val message = if (uris.size == 1) getString(R.string.one_photo_added_to_queue) else getString(R.string.multiple_photos_added_to_queue, uris.size)
@@ -80,7 +118,21 @@ class MainActivity : AppCompatActivity() {
 
         cameraHandler = CameraHandler(this) { photoFile ->
             val projectName = actvNombreProyecto.text.toString().trim()
-            enqueueUploadTask(photoFile.absolutePath, projectName)
+
+            lifecycleScope.launch {
+                val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+                val captureTime = sdf.format(Date(photoFile.lastModified()))
+                var gpsCoords: String? = null
+                var address: String? = null
+
+                val location = getCurrentLocation()
+                if (location != null) {
+                    gpsCoords = "${location.latitude}, ${location.longitude}"
+                    address = getAddressFromLocation(location.latitude, location.longitude)
+                }
+
+                enqueueUploadTask(photoFile.absolutePath, projectName, true, captureTime, gpsCoords, address)
+            }
         }
 
         if (cameraHandler.allPermissionsGranted()) {
@@ -122,7 +174,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true) {
+    private fun enqueueUploadTask(photoPath: String, projectName: String, showToast: Boolean = true, captureTime: String? = null, gpsCoords: String? = null, address: String? = null) {
         var finalProjectName = projectName
         if (!finalProjectName.lowercase().startsWith("c.c. ")) {
             finalProjectName = "C.C. $finalProjectName"
@@ -132,7 +184,10 @@ class MainActivity : AppCompatActivity() {
             imagePath = photoPath,
             projectName = finalProjectName,
             status = "Pending",
-            uuid = UUID.randomUUID().toString()
+            uuid = UUID.randomUUID().toString(),
+            captureTime = captureTime,
+            gpsCoords = gpsCoords,
+            address = address
         )
 
         lifecycleScope.launch {
@@ -209,5 +264,37 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show() }
             }
         })
+    }
+
+    private fun getCurrentLocation(): Location? {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val providers = locationManager.getProviders(true)
+            var bestLocation: Location? = null
+            for (provider in providers) {
+                val l = locationManager.getLastKnownLocation(provider) ?: continue
+                if (bestLocation == null || l.accuracy < bestLocation.accuracy) {
+                    bestLocation = l
+                }
+            }
+            return bestLocation
+        }
+        return null
+    }
+
+    private suspend fun getAddressFromLocation(latitude: Double, longitude: Double): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(this@MainActivity, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    addresses[0].getAddressLine(0)
+                } else null
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
     }
 }

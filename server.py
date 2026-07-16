@@ -106,8 +106,19 @@ def upload_file():
             if os.path.exists(final_path):
                 return jsonify({"success": "Duplicate ignored."}), 200
 
+            capture_time = request.form.get('capture_time')
+            gps_coords = request.form.get('gps_coords')
+            address = request.form.get('address')
+
             image_data = file.read()
-            watermark_text = f"{project_name} - {now.strftime('%Y-%m-%d %H:%M:%S')}"
+
+            watermark_time = capture_time if capture_time else now.strftime('%Y-%m-%d %H:%M:%S')
+            watermark_text = f"{project_name} - {watermark_time}"
+            if gps_coords:
+                watermark_text += f"\nGPS: {gps_coords}"
+            if address:
+                watermark_text += f"\n{address}"
+
             watermarked_image = add_watermark(image_data, watermark_text)
 
             if watermarked_image:
