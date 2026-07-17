@@ -53,7 +53,7 @@ def add_watermark(image_data, text):
             print("ADVERTENCIA: No se pudo cargar la fuente 'arial.ttf'. Usando fuente por defecto.")
             font = ImageFont.load_default()
 
-        bbox = draw.textbbox((0, 0), text, font=font)
+        bbox = draw.multiline_textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
         width, height = img.size
@@ -62,7 +62,7 @@ def add_watermark(image_data, text):
 
         rect_coords = (x - 10, y - 10, x + text_width + 10, y + text_height + 10)
         draw.rectangle(rect_coords, fill=(0, 0, 0, 102))
-        draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+        draw.multiline_text((x, y), text, font=font, fill=(255, 255, 255, 255))
 
         out = Image.alpha_composite(img, text_layer)
         return out.convert("RGB")
@@ -106,8 +106,19 @@ def upload_file():
             if os.path.exists(final_path):
                 return jsonify({"success": "Duplicate ignored."}), 200
 
+            capture_time = request.form.get('capture_time')
+            gps_coords = request.form.get('gps_coords')
+            address = request.form.get('address')
+
             image_data = file.read()
-            watermark_text = f"{project_name} - {now.strftime('%Y-%m-%d %H:%M:%S')}"
+
+            watermark_time = capture_time if capture_time else now.strftime('%Y-%m-%d %H:%M:%S')
+            watermark_text = f"{project_name} - {watermark_time}"
+            if gps_coords:
+                watermark_text += f"\nGPS: {gps_coords}"
+            if address:
+                watermark_text += f"\n{address}"
+
             watermarked_image = add_watermark(image_data, watermark_text)
 
             if watermarked_image:

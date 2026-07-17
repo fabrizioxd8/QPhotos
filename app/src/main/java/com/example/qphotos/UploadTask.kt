@@ -9,5 +9,8 @@ data class UploadTask(
     val imagePath: String,
     val projectName: String,
     val uuid: String,
+    val captureTime: String? = null,
+    val gpsCoords: String? = null,
+    val address: String? = null,
     var status: String = "Pending"
 )
