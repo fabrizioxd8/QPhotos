@@ -53,7 +53,7 @@ def add_watermark(image_data, text):
             print("ADVERTENCIA: No se pudo cargar la fuente 'arial.ttf'. Usando fuente por defecto.")
             font = ImageFont.load_default()
 
-        bbox = draw.textbbox((0, 0), text, font=font)
+        bbox = draw.multiline_textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
         width, height = img.size
@@ -62,7 +62,7 @@ def add_watermark(image_data, text):
 
         rect_coords = (x - 10, y - 10, x + text_width + 10, y + text_height + 10)
         draw.rectangle(rect_coords, fill=(0, 0, 0, 102))
-        draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+        draw.multiline_text((x, y), text, font=font, fill=(255, 255, 255, 255))
 
         out = Image.alpha_composite(img, text_layer)
         return out.convert("RGB")
